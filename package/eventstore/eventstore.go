@@ -2,6 +2,7 @@ package eventstore
 
 import (
 	"errors"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"strconv"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
-type EventStore struct {
+type DynamoDbEventStore struct {
 	Db        dynamodbiface.DynamoDBAPI
 	TableName string
 }
@@ -22,21 +23,24 @@ type QueryParams struct {
 }
 
 type Event struct {
+	StreamId    string    `dynamodbav:"streamId"`
+	CommittedAt time.Time `dynamodbav:"committedAt,unixtime"`
+	Version     int       `dynamodbav:"version"`
+	Data        []byte    `dynamodbav:"eventData"`
 }
 
-func GetByStreamId(es *EventStore, params *QueryParams) ([]map[string]*dynamodb.AttributeValue, error) {
+func GetByStreamId(es *DynamoDbEventStore, params *QueryParams) ([]Event, error) {
 	results, err := queryInternal(es, params)
 	if err != nil {
 		return nil, nil
 	}
 
-	// TODO: map to event struct
 	return results, err
 }
 
-func queryInternal(es *EventStore, params *QueryParams) ([]map[string]*dynamodb.AttributeValue, error) {
+func queryInternal(es *DynamoDbEventStore, params *QueryParams) ([]Event, error) {
 
-	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]map[string]*dynamodb.AttributeValue, map[string]*dynamodb.AttributeValue, error) {
+	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
 		input := &dynamodb.QueryInput{
 			TableName:              aws.String(es.TableName),
 			ExclusiveStartKey:      lastKey,
@@ -57,11 +61,16 @@ func queryInternal(es *EventStore, params *QueryParams) ([]map[string]*dynamodb.
 			return nil, nil, err
 		}
 
-		return result.Items, result.LastEvaluatedKey, nil
+		var events []Event
+		err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &events)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return events, result.LastEvaluatedKey, nil
 	}
 
-	var res []map[string]*dynamodb.AttributeValue
-
+	var res []Event
 	results, lastKey, err := queryFunc(nil)
 
 	if err != nil {
@@ -77,10 +86,6 @@ func queryInternal(es *EventStore, params *QueryParams) ([]map[string]*dynamodb.
 			res = append(res, r)
 		}
 
-		if lastKey == nil {
-			return res, nil
-		}
-
 		results, lastKey, err = queryFunc(lastKey)
 
 		if err != nil {
@@ -91,7 +96,7 @@ func queryInternal(es *EventStore, params *QueryParams) ([]map[string]*dynamodb.
 	return res, nil
 }
 
-func Save(es *EventStore, streamId string, expectedVersion int, event []byte) error {
+func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, event []byte) error {
 	now := time.Now()
 	nano := now.UnixNano()
 	commitTime := strconv.FormatInt(nano/1000000, 10)

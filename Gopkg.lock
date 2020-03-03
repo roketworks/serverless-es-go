@@ -16,7 +16,7 @@
   version = "v1.14.0"
 
 [[projects]]
-  digest = "1:e540ead8f06e2c1c1b5926db3d8c6907d8b9a3d0235d236fd8aa1b8ace3a7474"
+  digest = "1:60101adbf4f2c0ba5f62891c0d6ac1fb6a8d84039d70b8c4b95d6f25c67230cd"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -55,6 +55,7 @@
     "private/protocol/rest",
     "private/protocol/xml/xmlutil",
     "service/dynamodb",
+    "service/dynamodb/dynamodbattribute",
     "service/dynamodb/dynamodbiface",
     "service/sns",
     "service/sqs",
@@ -66,6 +67,14 @@
   version = "v1.29.13"
 
 [[projects]]
+  digest = "1:bc7e9c56408594a678dd165db7c579c2498a3c9eab9b308099820ddbfe85b720"
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a9a4cec6c9a26336ca42700ccc319ca842be56c0"
+  version = "v4.0.0"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -74,12 +83,31 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:bed9d72d596f94e65fff37f4d6c01398074a6bb1c3f3ceff963516bd01db6ff5"
+  name = "github.com/gofrs/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6b08a5c5172ba18946672b49749cde22873dd7c2"
+  version = "v3.2.0"
+
+[[projects]]
   digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
   name = "github.com/google/uuid"
   packages = ["."]
   pruneopts = "UT"
   revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:21bc535c1390e710d886a50f86b54f8146a72ff01d9d00da35f230d590313f20"
+  name = "github.com/guregu/dynamo"
+  packages = [
+    ".",
+    "internal/exprs",
+  ]
+  pruneopts = "UT"
+  revision = "e57b28dbf647885afdb198170d89b2d6f6b28996"
+  version = "v1.6.0"
 
 [[projects]]
   digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
@@ -105,6 +133,14 @@
   version = "v1.5.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  pruneopts = "UT"
+  revision = "244492dfa37ae2ce87222fd06250a03160745faa"
+
+[[projects]]
   digest = "1:55b110c99c5fdc4f14930747326acce56b52cfce60b24b1c03ef686ac0e46bb1"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -126,6 +162,7 @@
     "github.com/aws/aws-sdk-go/service/sns",
     "github.com/aws/aws-sdk-go/service/sqs",
     "github.com/google/uuid",
+    "github.com/guregu/dynamo",
     "github.com/stretchr/testify/assert",
   ]
   solver-name = "gps-cdcl"

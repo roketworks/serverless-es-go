@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -42,6 +43,14 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	_ = Save(es, streamId, 4, eventData)
 
 	events, err := GetByStreamId(es, &QueryParams{StreamId: streamId, Version: 1})
+
 	assert.Nil(t, err)
 	assert.Equal(t, len(events), 4)
+
+	for i, event := range events {
+		assert.Equal(t, streamId, event.StreamId)
+		assert.Equal(t, i + 1, event.Version)
+		assert.NotSame(t, new(time.Time), event.CommittedAt)
+		assert.Equal(t, eventData, event.Data)
+	}
 }

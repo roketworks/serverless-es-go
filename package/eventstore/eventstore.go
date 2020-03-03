@@ -2,13 +2,13 @@ package eventstore
 
 import (
 	"errors"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
@@ -30,15 +30,6 @@ type Event struct {
 }
 
 func GetByStreamId(es *DynamoDbEventStore, params *QueryParams) ([]Event, error) {
-	results, err := queryInternal(es, params)
-	if err != nil {
-		return nil, nil
-	}
-
-	return results, err
-}
-
-func queryInternal(es *DynamoDbEventStore, params *QueryParams) ([]Event, error) {
 
 	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
 		input := &dynamodb.QueryInput{

@@ -1,4 +1,4 @@
-package _package
+package eventstore
 
 import (
 	"fmt"

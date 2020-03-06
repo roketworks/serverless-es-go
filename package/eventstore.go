@@ -1,4 +1,4 @@
-package eventstore
+package _package
 
 import (
 	"errors"
@@ -18,9 +18,7 @@ type DynamoDbEventStore struct {
 	SequenceTable string
 }
 
-const AllStreamId string = "_all"
-
-type QueryParams struct {
+type GetStreamInput struct {
 	StreamId string
 	Version  int
 }
@@ -33,25 +31,60 @@ type Event struct {
 	Data            []byte    `dynamodbav:"eventData"`
 }
 
-func GetByStreamId(es *DynamoDbEventStore, params *QueryParams) ([]Event, error) {
-
-	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
-		input := &dynamodb.QueryInput{
-			TableName:              aws.String(es.EventTable),
-			ExclusiveStartKey:      lastKey,
-			ConsistentRead:         aws.Bool(true),
-			KeyConditionExpression: aws.String("streamId = :a AND version >= :v"),
-			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-				":a": {
-					S: aws.String(params.StreamId),
-				},
-				":v": {
-					N: aws.String(strconv.Itoa(params.Version)),
-				},
+func GetByStreamId(es *DynamoDbEventStore, params *GetStreamInput) ([]Event, error) {
+	input := &dynamodb.QueryInput{
+		TableName:              aws.String(es.EventTable),
+		ConsistentRead:         aws.Bool(true),
+		KeyConditionExpression: aws.String("streamId = :a AND version >= :v"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":a": {
+				S: aws.String(params.StreamId),
 			},
-		}
+			":v": {
+				N: aws.String(strconv.Itoa(params.Version)),
+			},
+		},
+	}
 
-		result, err := es.Db.Query(input)
+	res, err := queryEvents(es, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func GetAllStream(es *DynamoDbEventStore, sequence int) ([]Event, error) {
+	input := &dynamodb.QueryInput{
+		TableName: aws.String(es.EventTable),
+		//ConsistentRead:         aws.Bool(true),
+		ExpressionAttributeNames: map[string]*string{
+			"#position": aws.String("position"),
+		},
+		KeyConditionExpression: aws.String("active = :a AND #position >= :p"),
+		IndexName:              aws.String("position"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":p": {
+				N: aws.String(strconv.Itoa(sequence)),
+			},
+			":a": {
+				N: aws.String("1"),
+			},
+		},
+	}
+
+	res, err := queryEvents(es, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Event, error) {
+	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
+		queryInput.ExclusiveStartKey = lastKey
+		result, err := es.Db.Query(queryInput)
 		if err != nil {
 			return nil, nil, err
 		}

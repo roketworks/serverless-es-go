@@ -1,4 +1,4 @@
-package eventstore
+package _package
 
 import (
 	"fmt"
@@ -39,7 +39,7 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	_, _ = Save(es, streamId, 3, eventData)
 	_, _ = Save(es, streamId, 4, eventData)
 
-	events, err := GetByStreamId(es, &QueryParams{StreamId: streamId, Version: 1})
+	events, err := GetByStreamId(es, &GetStreamInput{StreamId: streamId, Version: 1})
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(events), 4)
@@ -52,7 +52,8 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	}
 }
 
-func TestGetLatestMessagePositionShouldIncrementValue(t *testing.T) {
-	_, err := getLatestMessagePosition(es)
+func TestGetAllStream(t *testing.T) {
+	events, err := GetAllStream(es, 1)
 	assert.Nil(t, err)
+	assert.Equal(t, 12, len(events))
 }

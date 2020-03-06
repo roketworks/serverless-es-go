@@ -67,28 +67,12 @@
   version = "v1.29.13"
 
 [[projects]]
-  digest = "1:bc7e9c56408594a678dd165db7c579c2498a3c9eab9b308099820ddbfe85b720"
-  name = "github.com/cenkalti/backoff"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "a9a4cec6c9a26336ca42700ccc319ca842be56c0"
-  version = "v4.0.0"
-
-[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
-
-[[projects]]
-  digest = "1:bed9d72d596f94e65fff37f4d6c01398074a6bb1c3f3ceff963516bd01db6ff5"
-  name = "github.com/gofrs/uuid"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "6b08a5c5172ba18946672b49749cde22873dd7c2"
-  version = "v3.2.0"
 
 [[projects]]
   digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
@@ -99,22 +83,23 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:21bc535c1390e710d886a50f86b54f8146a72ff01d9d00da35f230d590313f20"
-  name = "github.com/guregu/dynamo"
-  packages = [
-    ".",
-    "internal/exprs",
-  ]
-  pruneopts = "UT"
-  revision = "e57b28dbf647885afdb198170d89b2d6f6b28996"
-  version = "v1.6.0"
-
-[[projects]]
   digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   pruneopts = "UT"
   revision = "c2b33e84"
+
+[[projects]]
+  digest = "1:9ff22c26414baf7deaf74f2a788fe7b97666048bcbe346c52cfe823442abbdfb"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid",
+    "scram",
+  ]
+  pruneopts = "UT"
+  revision = "99274577be97ac9b1d95a2d61d566dc9b7cc6a54"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -131,14 +116,6 @@
   pruneopts = "UT"
   revision = "3ebf1ddaeb260c4b1ae502a01c7844fa8c1fa0e9"
   version = "v1.5.1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
-  name = "golang.org/x/net"
-  packages = ["context"]
-  pruneopts = "UT"
-  revision = "244492dfa37ae2ce87222fd06250a03160745faa"
 
 [[projects]]
   digest = "1:55b110c99c5fdc4f14930747326acce56b52cfce60b24b1c03ef686ac0e46bb1"
@@ -158,11 +135,12 @@
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/dynamodb",
+    "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute",
     "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface",
     "github.com/aws/aws-sdk-go/service/sns",
     "github.com/aws/aws-sdk-go/service/sqs",
     "github.com/google/uuid",
-    "github.com/guregu/dynamo",
+    "github.com/lib/pq",
     "github.com/stretchr/testify/assert",
   ]
   solver-name = "gps-cdcl"

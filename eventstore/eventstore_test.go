@@ -51,9 +51,3 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 		assert.Equal(t, eventData, event.Data)
 	}
 }
-
-func TestGetAllStream(t *testing.T) {
-	events, err := GetAllStream(es, 1)
-	assert.Nil(t, err)
-	assert.Equal(t, 12, len(events))
-}

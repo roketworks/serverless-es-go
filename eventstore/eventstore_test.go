@@ -2,7 +2,6 @@ package eventstore
 
 import (
 	"fmt"
-	"io/ioutil"
 	"testing"
 	"time"
 
@@ -32,12 +31,11 @@ func TestSaveShouldSaveToNewStream(t *testing.T) {
 
 func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
-	eventData, _ := ioutil.ReadFile("test_event_data.json")
 
-	_, _ = Save(es, streamId, 1, eventData)
-	_, _ = Save(es, streamId, 2, eventData)
-	_, _ = Save(es, streamId, 3, eventData)
-	_, _ = Save(es, streamId, 4, eventData)
+	_, _ = Save(es, streamId, 1, []byte(eventData))
+	_, _ = Save(es, streamId, 2, []byte(eventData))
+	_, _ = Save(es, streamId, 3, []byte(eventData))
+	_, _ = Save(es, streamId, 4, []byte(eventData))
 
 	events, err := GetByStreamId(es, &GetStreamInput{StreamId: streamId, Version: 1})
 
@@ -51,3 +49,8 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 		assert.Equal(t, eventData, event.Data)
 	}
 }
+
+const eventData string = `
+{
+  "Test": "Value"
+}`

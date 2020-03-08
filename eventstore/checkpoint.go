@@ -6,12 +6,12 @@ import (
 )
 
 type CheckpointConfig struct {
-	connectionString string
-	projectionName   string
+	ConnectionString string
+	ProjectionName   string
 }
 
 func SaveCheckpoint(cfg *CheckpointConfig, position int) error {
-	db, err := sql.Open("postgres", cfg.connectionString)
+	db, err := sql.Open("postgres", cfg.ConnectionString)
 	if err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func SaveCheckpoint(cfg *CheckpointConfig, position int) error {
 	}
 
 	db.Begin()
-	_, err = db.Exec(update, cfg.projectionName, position)
+	_, err = db.Exec(update, cfg.ProjectionName, position)
 	if err != nil {
 		db.Close()
 		return err

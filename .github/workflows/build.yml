@@ -26,7 +26,6 @@ jobs:
 
       - name: setup tables
         run: |
-          aws configure
           make dynamodb_endpoint=http://localhost:8042 create-test-tables
 
       - name: build and test

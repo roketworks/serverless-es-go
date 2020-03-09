@@ -11,11 +11,13 @@ test:
 	go test -v ./eventstore
 
 create-test-tables:
-	aws dynamodb create-table --endpoint-url $(dynamodb_endpoint) --table-name sequences --billing-mode PAY_PER_REQUEST \
+	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=id AWS_SECRET_ACCESS_KEY=key \
+		aws dynamodb create-table --endpoint-url $(dynamodb_endpoint) --table-name sequences --billing-mode PAY_PER_REQUEST \
 		--attribute-definitions AttributeName=sequence,AttributeType=S \
 		--key-schema AttributeName=sequence,KeyType=HASH
 
-	aws dynamodb create-table --endpoint-url $(dynamodb_endpoint) --table-name eventstore --billing-mode PAY_PER_REQUEST \
+	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=id AWS_SECRET_ACCESS_KEY=key \
+		aws dynamodb create-table --endpoint-url $(dynamodb_endpoint) --table-name eventstore --billing-mode PAY_PER_REQUEST \
 		--attribute-definitions \
 			AttributeName=streamId,AttributeType=S \
 			AttributeName=version,AttributeType=N \

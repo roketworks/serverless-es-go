@@ -26,7 +26,7 @@ func verifyCheckpoint(t *testing.T, name string, position int) {
 	var projectionName string
 	var checkpointPosition int
 
-	err = db.QueryRow("SELECT * FROM checkpoints WHERE name = ?", name).Scan(&projectionName, &checkpointPosition)
+	err = db.QueryRow("SELECT * FROM checkpoints WHERE name = $1", name).Scan(&projectionName, &checkpointPosition)
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, projectionName)

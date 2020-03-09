@@ -1,0 +1,14 @@
+[aws]
+region = "eu-west-1"
+
+[aws.dynamodb]
+endpoint = "http://localhost:4569"
+
+[aws.dynamodb.es]
+table_name = "eventstore"
+
+[aws.dynamodb.sequences]
+table_name = "sequences"
+
+[postgres]
+connection_string = "host=localhost port=5432 dbname=checkpoints user=es password=es sslmode=disable"

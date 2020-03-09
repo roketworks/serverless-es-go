@@ -7,5 +7,6 @@ require (
 	github.com/aws/aws-sdk-go v1.29.18
 	github.com/google/uuid v1.1.1
 	github.com/lib/pq v1.3.0
+	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.5.1
 )

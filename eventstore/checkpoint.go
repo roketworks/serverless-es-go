@@ -16,14 +16,12 @@ func SaveCheckpoint(cfg *CheckpointConfig, position int) error {
 		return err
 	}
 
-	_, err = db.Exec(schema)
-	if err != nil {
+	if _, err = db.Exec(schema); err != nil {
 		return err
 	}
 
 	db.Begin()
-	_, err = db.Exec(update, cfg.ProjectionName, position)
-	if err != nil {
+	if _, err = db.Exec(update, cfg.ProjectionName, position); err != nil {
 		db.Close()
 		return err
 	}
@@ -35,16 +33,16 @@ func SaveCheckpoint(cfg *CheckpointConfig, position int) error {
 const schema = `
 	CREATE TABLE IF NOT EXISTS checkpoints
 	(
-		name        varchar(50),
+		name        varchar(50) unique,
 		position    int
 	);
 `
 
 const update = `
 	INSERT INTO checkpoints (name, position)
-	VALUES (?, ?)
+	VALUES ($1, $2)
 	ON CONFLICT(name)
 	DO
 	  UPDATE SET
-		position = ?
+		position = $2
 `

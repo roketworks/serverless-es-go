@@ -73,12 +73,11 @@ func GetAllStream(es *DynamoDbEventStore, sequence int) ([]Event, error) {
 		},
 	}
 
-	res, err := queryEvents(es, input)
-	if err != nil {
+	if res, err := queryEvents(es, input); err != nil {
 		return nil, err
+	} else {
+		return res, nil
 	}
-
-	return res, nil
 }
 
 func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Event, error) {
@@ -129,7 +128,7 @@ func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, event []
 	nano := now.UnixNano()
 	commitTime := strconv.FormatInt(nano/1000000, 10)
 
-	position, err := getLatestMessagePosition(es)
+	position, err := updateMessagePosition(es)
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
@@ -194,7 +193,10 @@ func getLatestMessagePosition(es *DynamoDbEventStore) (int, error) {
 	}
 
 	if *queryOutput.Count == 0 {
-		err = insertSequence(es)
+		if err = insertSequence(es); err != nil {
+			return -1, err
+		}
+		return 0, nil
 	}
 
 	if *queryOutput.Count > 1 {
@@ -203,6 +205,15 @@ func getLatestMessagePosition(es *DynamoDbEventStore) (int, error) {
 	}
 
 	currentValue, err := strconv.Atoi(*queryOutput.Items[0]["counter"].N)
+	if err != nil {
+		return -1, err
+	}
+
+	return currentValue, nil
+}
+
+func updateMessagePosition(es *DynamoDbEventStore) (int, error) {
+	currentValue, err := getLatestMessagePosition(es)
 	if err != nil {
 		return -1, err
 	}

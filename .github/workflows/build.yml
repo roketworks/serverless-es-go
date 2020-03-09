@@ -4,9 +4,19 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:alpine
+        env:
+          - POSTGRES_USER=es
+          - POSTGRES_PASSWORD=es
+          - POSTGRES_DB=checkpoints
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2-beta
       - run: |
           make mod
           make build
+

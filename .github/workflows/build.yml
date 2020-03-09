@@ -19,4 +19,5 @@ jobs:
       - run: |
           make mod
           make build
+          make test
 

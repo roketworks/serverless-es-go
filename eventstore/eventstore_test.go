@@ -18,7 +18,7 @@ var endpoint = test.Configuration.Aws.DynamoDb.Endpoint
 var esTableName = test.Configuration.Aws.DynamoDb.Es.TableName
 var sequencesTableName = test.Configuration.Aws.DynamoDb.Sequences.TableName
 
-var awsSession = session.Must(session.NewSession(&aws.Config{Region: aws.String(region)}))
+var awsSession = session.Must(session.NewSession(&aws.Config{Endpoint: aws.String(endpoint), Region: aws.String(region)}))
 var dynamoSvc = dynamodb.New(awsSession)
 var es = &DynamoDbEventStore{Db: dynamoSvc, EventTable: esTableName, SequenceTable: sequencesTableName}
 

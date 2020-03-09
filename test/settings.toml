@@ -2,7 +2,7 @@
 region = "eu-west-1"
 
 [aws.dynamodb]
-endpoint = "http://localhost:4569"
+endpoint = "http://localhost:8042"
 
 [aws.dynamodb.es]
 table_name = "eventstore"

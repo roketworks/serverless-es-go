@@ -62,7 +62,7 @@ func GetAllStream(es *DynamoDbEventStore, sequence int) ([]Event, error) {
 			"#position": aws.String("position"),
 		},
 		KeyConditionExpression: aws.String("active = :a AND #position >= :p"),
-		IndexName:              aws.String("position"),
+		IndexName:              aws.String("active-position-index"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":p": {
 				N: aws.String(strconv.Itoa(sequence)),

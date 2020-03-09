@@ -56,7 +56,7 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-        - IndexName: position
+        - IndexName: active-position-index
           KeySchema:
             - AttributeName: active
               KeyType: HASH

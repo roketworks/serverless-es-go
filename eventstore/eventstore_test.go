@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
@@ -18,7 +19,13 @@ var endpoint = test.Configuration.Aws.DynamoDb.Endpoint
 var esTableName = test.Configuration.Aws.DynamoDb.Es.TableName
 var sequencesTableName = test.Configuration.Aws.DynamoDb.Sequences.TableName
 
-var awsSession = session.Must(session.NewSession(&aws.Config{Endpoint: aws.String(endpoint), Region: aws.String(region)}))
+var awsConfig = aws.Config{
+	Endpoint:    aws.String(endpoint),
+	Region:      aws.String(region),
+	Credentials: credentials.NewStaticCredentials("default", "fake", "fake"),
+}
+
+var awsSession = session.Must(session.NewSession(&awsConfig))
 var dynamoSvc = dynamodb.New(awsSession)
 var es = &DynamoDbEventStore{Db: dynamoSvc, EventTable: esTableName, SequenceTable: sequencesTableName}
 

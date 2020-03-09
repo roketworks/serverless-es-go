@@ -1,9 +1,6 @@
 name: Build
 on: [push]
 
-env:
-  LOCALSTACK_API_KEY: ${{ secrets.LOCALSTACK_API_KEY }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,8 +24,16 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2-beta
 
+      - name: Configure Fake AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: "fakekey"
+          aws-secret-access-key: "fakekey"
+          aws-region: eu-west-1
+
       - name: setup tables
         run: |
+          aws configure
           make dynamodb_endpoint=http://localhost:8042 create-test-tables
 
       - name: build and test

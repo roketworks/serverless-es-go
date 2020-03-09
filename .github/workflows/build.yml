@@ -1,6 +1,9 @@
 name: Build
 on: [push]
 
+env:
+  LOCALSTACK_API_KEY: ${{ secrets.LOCALSTACK_API_KEY }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -8,7 +11,7 @@ jobs:
       localstack:
         image: localstack/localstack
         env:
-          LOCALSTACK_API_KEY: ${{ secrets.LOCALSTACK_API_KEY }}
+          LOCALSTACK_API_KEY: ${{ env.LOCALSTACK_API_KEY }}
           DOCKER_HOST: unix:///var/run/docker.sock
         ports:
           - "4567-4599:4567-4599"
@@ -23,10 +26,13 @@ jobs:
           POSTGRES_DB: checkpoints
         ports:
           - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2-beta
-      - run: |
+      - name: build and test
+        run: |
           make mod
           make build
           make test

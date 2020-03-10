@@ -8,7 +8,9 @@ import (
 
 type Config struct {
 	Aws struct {
-		Region string
+		Region       string
+		AccessKey    string `mapstructure:"access_key"`
+		AccessSecret string `mapstructure:"access_secret"`
 
 		DynamoDb struct {
 			Endpoint string

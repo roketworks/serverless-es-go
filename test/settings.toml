@@ -1,5 +1,7 @@
 [aws]
 region = "eu-west-1"
+access_key = "fake_key"
+access_secret = "fake_secret"
 
 [aws.dynamodb]
 endpoint = "http://localhost:8042"

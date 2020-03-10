@@ -15,6 +15,8 @@ import (
 )
 
 var region = test.Configuration.Aws.Region
+var key = test.Configuration.Aws.AccessKey
+var secret = test.Configuration.Aws.AccessSecret
 var endpoint = test.Configuration.Aws.DynamoDb.Endpoint
 var esTableName = test.Configuration.Aws.DynamoDb.Es.TableName
 var sequencesTableName = test.Configuration.Aws.DynamoDb.Sequences.TableName
@@ -22,7 +24,7 @@ var sequencesTableName = test.Configuration.Aws.DynamoDb.Sequences.TableName
 var awsConfig = aws.Config{
 	Endpoint:    aws.String(endpoint),
 	Region:      aws.String(region),
-	Credentials: credentials.NewStaticCredentials("default", "fake", "fake"),
+	Credentials: credentials.NewStaticCredentials("default", key, secret),
 }
 
 var awsSession = session.Must(session.NewSession(&awsConfig))

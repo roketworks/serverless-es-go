@@ -4,29 +4,15 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      dynamodb:
-        image: amazon/dynamodb-local
-        ports:
-          - "8042:8000"
-
-      postgres:
-        image: postgres:alpine
-        env:
-          POSTGRES_USER: es
-          POSTGRES_PASSWORD: es
-          POSTGRES_DB: checkpoints
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2-beta
 
+      - name: docker-compose up
+        run: docker-compose up -d
+
       - name: setup tables
-        run: |
-          make dynamodb_endpoint=http://localhost:8042 create-test-tables
+        run: make dynamodb_endpoint=http://localhost:8042 create-test-tables
 
       - name: build and test
         run: |

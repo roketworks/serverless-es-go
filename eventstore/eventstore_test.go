@@ -14,22 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var region = test.Configuration.Aws.Region
-var key = test.Configuration.Aws.AccessKey
-var secret = test.Configuration.Aws.AccessSecret
-var endpoint = test.Configuration.Aws.DynamoDb.Endpoint
-var esTableName = test.Configuration.Aws.DynamoDb.Es.TableName
-var sequencesTableName = test.Configuration.Aws.DynamoDb.Sequences.TableName
-
-var awsConfig = aws.Config{
-	Endpoint:    aws.String(endpoint),
-	Region:      aws.String(region),
-	Credentials: credentials.NewStaticCredentials("default", key, secret),
-}
-
-var awsSession = session.Must(session.NewSession(&awsConfig))
-var dynamoSvc = dynamodb.New(awsSession)
-var es = &DynamoDbEventStore{Db: dynamoSvc, EventTable: esTableName, SequenceTable: sequencesTableName}
+var es = getEventStore()
 
 func TestSaveShouldSaveToNewStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
@@ -84,6 +69,25 @@ func TestGetAllStream(t *testing.T) {
 		assert.NotSame(t, new(time.Time), event.CommittedAt)
 		assert.Equal(t, []byte(eventData), event.Data)
 	}
+}
+
+func getEventStore() *DynamoDbEventStore {
+	region := test.Configuration.Aws.Region
+	key := test.Configuration.Aws.AccessKey
+	secret := test.Configuration.Aws.AccessSecret
+	endpoint := test.Configuration.Aws.DynamoDb.Endpoint
+	esTableName := test.Configuration.Aws.DynamoDb.Es.TableName
+	sequencesTableName := test.Configuration.Aws.DynamoDb.Sequences.TableName
+
+	var awsConfig = aws.Config{
+		Endpoint:    aws.String(endpoint),
+		Region:      aws.String(region),
+		Credentials: credentials.NewStaticCredentials("default", key, secret),
+	}
+
+	var awsSession = session.Must(session.NewSession(&awsConfig))
+	var dynamoSvc = dynamodb.New(awsSession)
+	return &DynamoDbEventStore{Db: dynamoSvc, EventTable: esTableName, SequenceTable: sequencesTableName}
 }
 
 const eventData string = `

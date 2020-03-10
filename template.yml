@@ -70,3 +70,25 @@ Resources:
         Enabled: true
       StreamSpecification:
         StreamViewType: NEW_IMAGE
+
+  ProjectionsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      ContentBasedDeduplication: true
+      FifoQueue: true
+
+  QueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref ProjectionsQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub ${AWS::AccountId}
+            Action:
+              - sqs:SendMessage
+            Resource:
+              - !GetAtt ProjectionsQueue.Arn

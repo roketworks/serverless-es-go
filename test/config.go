@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -23,18 +24,26 @@ type Config struct {
 				TableName string `mapstructure:"table_name"`
 			}
 		}
+
+		Sqs struct {
+			Endpoint string
+		}
 	}
 	Postgres struct {
 		ConnectionString string `mapstructure:"connection_string"`
+	}
+	Projections struct {
+		QueueNames []string `mapstructure:"queue_names"`
 	}
 }
 
 var Configuration Config
 
 func init() {
-	viper.SetEnvPrefix("ES_TEST_")
+	viper.SetEnvPrefix("es_test")
 	viper.AutomaticEnv()
-	viper.SetConfigName("settings")
+	viper.EnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetConfigName("config_test")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath("../test")
 

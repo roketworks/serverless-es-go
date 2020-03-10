@@ -1,10 +1,5 @@
 [aws]
 region = "eu-west-1"
-access_key = "fake_key"
-access_secret = "fake_secret"
-
-[aws.dynamodb]
-endpoint = "http://localhost:8042"
 
 [aws.dynamodb.es]
 table_name = "eventstore"
@@ -14,3 +9,6 @@ table_name = "sequences"
 
 [postgres]
 connection_string = "host=localhost port=5432 dbname=checkpoints user=es password=es sslmode=disable"
+
+[projections]
+queues = ["test-queue"]

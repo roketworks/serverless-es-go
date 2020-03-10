@@ -11,8 +11,10 @@ jobs:
       - name: docker-compose up
         run: docker-compose up -d
 
-      - name: setup tables
-        run: make dynamodb_endpoint=http://localhost:8042 create-test-tables
+      - name: setup test resources
+        run: |
+          make create-local-tables
+          make create-local-queues
 
       - name: build and test
         run: |

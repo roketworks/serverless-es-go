@@ -9,7 +9,6 @@ mod:
 
 build:
 	CGO_ENABLED=0 GOOS=linux go build -v ./eventstore
-	CGO_ENABLED=0 GOOS=linux go build -v ./cmd/sns-to-dynamodb
 	CGO_ENABLED=0 GOOS=linux go build -v ./cmd/dynamodb-stream-lambda
 
 test:

@@ -1,4 +1,4 @@
-package eventstore
+package serverless_es_go
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
-	"github.com/roketworks/serverless-es-go/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -76,12 +75,12 @@ func TestGetAllStream(t *testing.T) {
 }
 
 func getEventStore() *DynamoDbEventStore {
-	region := test.Configuration.Aws.Region
-	key := test.Configuration.Aws.AccessKey
-	secret := test.Configuration.Aws.AccessSecret
-	endpoint := test.Configuration.Aws.DynamoDb.Endpoint
-	esTableName := test.Configuration.Aws.DynamoDb.Es.TableName
-	sequencesTableName := test.Configuration.Aws.DynamoDb.Sequences.TableName
+	region := testConfig.Aws.Region
+	key := testConfig.Aws.AccessKey
+	secret := testConfig.Aws.AccessSecret
+	endpoint := testConfig.Aws.DynamoDb.Endpoint
+	esTableName := testConfig.Aws.DynamoDb.Es.TableName
+	sequencesTableName := testConfig.Aws.DynamoDb.Sequences.TableName
 
 	var awsConfig = aws.Config{
 		Endpoint:    aws.String(endpoint),

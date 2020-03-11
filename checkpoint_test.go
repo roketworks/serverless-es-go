@@ -1,4 +1,4 @@
-package eventstore
+package serverless_es_go
 
 import (
 	"testing"
@@ -6,11 +6,10 @@ import (
 	"database/sql"
 	_ "github.com/lib/pq"
 
-	"github.com/roketworks/serverless-es-go/test"
 	"github.com/stretchr/testify/assert"
 )
 
-var connectionString = test.Configuration.Postgres.ConnectionString
+var connectionString = testConfig.Postgres.ConnectionString
 
 func TestSaveNewCheckpoint(t *testing.T) {
 	cfg := CheckpointConfig{ConnectionString: connectionString, ProjectionName: "test-projection"}

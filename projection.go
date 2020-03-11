@@ -1,4 +1,4 @@
-package eventstore
+package serverless_es_go
 
 import (
 	"encoding/json"

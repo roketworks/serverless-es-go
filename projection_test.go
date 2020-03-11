@@ -1,4 +1,4 @@
-package eventstore
+package serverless_es_go
 
 import (
 	"encoding/json"
@@ -7,18 +7,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/roketworks/serverless-es-go/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
-
-	_ "github.com/roketworks/serverless-es-go/test"
 )
 
 func TestHandleDynamoDbStream(t *testing.T) {
-	region := test.Configuration.Aws.Region
-	key := test.Configuration.Aws.AccessKey
-	secret := test.Configuration.Aws.AccessSecret
-	endpoint := test.Configuration.Aws.Sqs.Endpoint
+	region := testConfig.Aws.Region
+	key := testConfig.Aws.AccessKey
+	secret := testConfig.Aws.AccessSecret
+	endpoint := testConfig.Aws.Sqs.Endpoint
 
 	var awsConfig = aws.Config{
 		Endpoint:    aws.String(endpoint),
@@ -30,7 +27,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 	var sqsSvc = sqs.New(awsSession)
 	handlerInput := DynamoDbStreamHandlerInput{
 		Sqs:        sqsSvc,
-		QueueNames: test.Configuration.Projections.QueueNames,
+		QueueNames: testConfig.Projections.QueueNames,
 	}
 
 	var testEvent events.DynamoDBEvent
@@ -41,7 +38,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 	err := HandleDynamoDbStream(&handlerInput, testEvent)
 	assert.Nil(t, err)
 
-	for _, queueName := range test.Configuration.Projections.QueueNames {
+	for _, queueName := range testConfig.Projections.QueueNames {
 		queueUrl, _ := sqsSvc.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: aws.String(queueName)})
 
 		msg, _ := sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{

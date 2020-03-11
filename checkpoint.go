@@ -1,4 +1,4 @@
-package eventstore
+package serverless_es_go
 
 import (
 	"database/sql"
@@ -20,11 +20,16 @@ func SaveCheckpoint(cfg *CheckpointConfig, position int, timestamp int64) error 
 		return err
 	}
 
-	db.Begin()
-	if _, err = db.Exec(update, cfg.ProjectionName, position, timestamp); err != nil {
+	var tx *sql.Tx
+	if tx, err = db.Begin(); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(update, cfg.ProjectionName, position, timestamp); err != nil {
+		tx.Rollback()
 		db.Close()
 		return err
 	}
+	tx.Commit()
 	db.Close()
 
 	return nil

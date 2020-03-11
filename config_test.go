@@ -1,4 +1,4 @@
-package test
+package serverless_es_go
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ type Config struct {
 	}
 }
 
-var Configuration Config
+var testConfig Config
 
 func init() {
 	viper.SetEnvPrefix("es_test")
@@ -52,5 +52,5 @@ func init() {
 		os.Exit(1)
 	}
 
-	viper.Unmarshal(&Configuration)
+	viper.Unmarshal(&testConfig)
 }

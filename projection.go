@@ -1,4 +1,4 @@
-package serverless_es_go
+package esgo
 
 import (
 	"encoding/json"

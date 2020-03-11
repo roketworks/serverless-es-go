@@ -1,4 +1,4 @@
-module github.com/roketworks/serverless-es-go
+module github.com/roketworks/esgo
 
 go 1.14
 

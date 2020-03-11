@@ -6,10 +6,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/roketworks/serverless-es-go"
+	"github.com/roketworks/esgo"
 	"github.com/spf13/viper"
 
-	_ "github.com/roketworks/serverless-es-go/config"
+	_ "github.com/roketworks/esgo/config"
 )
 
 var awsSession = session.Must(session.NewSession())

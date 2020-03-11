@@ -8,11 +8,11 @@ mod:
 	GO111MODULE=on go mod vendor
 
 build:
-	CGO_ENABLED=0 GOOS=linux go build -v ./eventstore
+	CGO_ENABLED=0 GOOS=linux go build -v
 	CGO_ENABLED=0 GOOS=linux go build -v ./cmd/dynamodb-stream-lambda
 
 test:
-	go test -v ./eventstore
+	go test -v .
 
 create-local-tables:
 	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake_key AWS_SECRET_ACCESS_KEY=fake_secret \

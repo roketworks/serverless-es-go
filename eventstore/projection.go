@@ -38,6 +38,11 @@ func sendEventToSqs(input *DynamoDbStreamHandlerInput, record events.DynamoDBEve
 		return err
 	}
 
+	json, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
 	for _, queueName := range input.QueueNames {
 		queueUrl, err := input.Sqs.GetQueueUrl(&sqs.GetQueueUrlInput{
 			QueueName: aws.String(queueName),
@@ -50,7 +55,7 @@ func sendEventToSqs(input *DynamoDbStreamHandlerInput, record events.DynamoDBEve
 		sendMessage := sqs.SendMessageInput{
 			QueueUrl:       queueUrl.QueueUrl,
 			MessageGroupId: aws.String(event.StreamId),
-			MessageBody:    aws.String(string(event.Data)),
+			MessageBody:    aws.String(string(json)),
 		}
 
 		if _, err := input.Sqs.SendMessage(&sendMessage); err != nil {

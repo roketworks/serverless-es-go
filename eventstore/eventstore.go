@@ -24,11 +24,12 @@ type GetStreamInput struct {
 }
 
 type Event struct {
-	StreamId        string    `dynamodbav:"streamId"`
-	Version         int       `dynamodbav:"version"`
-	CommittedAt     time.Time `dynamodbav:"committedAt,unixtime"`
-	MessagePosition int       `dynamodbav:"position"`
-	Data            []byte    `dynamodbav:"eventData"`
+	StreamId        string `dynamodbav:"streamId"`
+	Version         int    `dynamodbav:"version"`
+	CommittedAt     int64  `dynamodbav:"committedAt"`
+	MessagePosition int    `dynamodbav:"position"`
+	Type            string `dynamodbav:"type"`
+	Data            []byte `dynamodbav:"eventData"`
 }
 
 func GetByStreamId(es *DynamoDbEventStore, params *GetStreamInput) ([]Event, error) {
@@ -123,10 +124,8 @@ func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Eve
 	return res, nil
 }
 
-func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, event []byte) (int, error) {
-	now := time.Now()
-	nano := now.UnixNano()
-	commitTime := strconv.FormatInt(nano/1000000, 10)
+func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventType string, event []byte) (int, error) {
+	commitTime := strconv.FormatInt(getTimestamp(), 10)
 
 	position, err := updateMessagePosition(es)
 
@@ -146,6 +145,9 @@ func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, event []
 			},
 			"active": {
 				N: aws.String("1"),
+			},
+			"type": {
+				S: aws.String(eventType),
 			},
 			"eventData": {
 				B: event,
@@ -170,6 +172,12 @@ func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, event []
 	}
 
 	return position, nil
+}
+
+func getTimestamp() int64 {
+	now := time.Now()
+	nano := now.UnixNano()
+	return nano / 1000000
 }
 
 func getLatestMessagePosition(es *DynamoDbEventStore) (int, error) {

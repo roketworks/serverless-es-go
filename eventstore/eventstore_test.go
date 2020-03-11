@@ -2,9 +2,6 @@ package eventstore
 
 import (
 	"fmt"
-	"testing"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/roketworks/serverless-es-go/test"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 var es = getEventStore()
@@ -19,7 +17,7 @@ var es = getEventStore()
 func TestSaveShouldSaveToNewStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
 
-	_, err := Save(es, streamId, 1, []byte(eventData))
+	_, err := Save(es, streamId, 1, "event-type", []byte(eventData))
 	assert.Nil(t, err)
 }
 
@@ -28,10 +26,12 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	initialPosition, err := getLatestMessagePosition(es)
 	assert.Nil(t, err)
 
-	_, _ = Save(es, streamId, 1, []byte(eventData))
-	_, _ = Save(es, streamId, 2, []byte(eventData))
-	_, _ = Save(es, streamId, 3, []byte(eventData))
-	_, _ = Save(es, streamId, 4, []byte(eventData))
+	preCommitTime := getTimestamp()
+	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
+	postCommit := getTimestamp()
 
 	events, err := GetByStreamId(es, &GetStreamInput{StreamId: streamId, Version: 1})
 
@@ -42,7 +42,8 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 		assert.Equal(t, streamId, event.StreamId)
 		assert.Equal(t, i+1, event.Version)
 		assert.Equal(t, initialPosition+i+1, event.MessagePosition)
-		assert.NotSame(t, new(time.Time), event.CommittedAt)
+		assert.GreaterOrEqual(t, event.CommittedAt, preCommitTime)
+		assert.LessOrEqual(t, event.CommittedAt, postCommit)
 		assert.Equal(t, []byte(eventData), event.Data)
 	}
 }
@@ -52,10 +53,12 @@ func TestGetAllStream(t *testing.T) {
 	initialPosition, err := getLatestMessagePosition(es)
 	assert.Nil(t, err)
 
-	_, _ = Save(es, streamId, 1, []byte(eventData))
-	_, _ = Save(es, streamId, 2, []byte(eventData))
-	_, _ = Save(es, streamId, 3, []byte(eventData))
-	_, _ = Save(es, streamId, 4, []byte(eventData))
+	preCommitTime := getTimestamp()
+	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
+	postCommit := getTimestamp()
 
 	events, err := GetAllStream(es, initialPosition+1)
 
@@ -66,7 +69,8 @@ func TestGetAllStream(t *testing.T) {
 		assert.Equal(t, streamId, event.StreamId)
 		assert.Equal(t, i+1, event.Version)
 		assert.Equal(t, initialPosition+i+1, event.MessagePosition)
-		assert.NotSame(t, new(time.Time), event.CommittedAt)
+		assert.GreaterOrEqual(t, event.CommittedAt, preCommitTime)
+		assert.LessOrEqual(t, event.CommittedAt, postCommit)
 		assert.Equal(t, []byte(eventData), event.Data)
 	}
 }

@@ -40,6 +40,20 @@ func TestHandleDynamoDbStream(t *testing.T) {
 
 	err := HandleDynamoDbStream(&handlerInput, testEvent)
 	assert.Nil(t, err)
+
+	for _, queueName := range test.Configuration.Projections.QueueNames {
+		queueUrl, _ := sqsSvc.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: aws.String(queueName)})
+
+		msg, _ := sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
+			QueueUrl: queueUrl.QueueUrl,
+		})
+
+		assert.NotNil(t, msg)
+		assert.Equal(t, 1, len(msg.Messages))
+
+		var event Event
+		_ = json.Unmarshal([]byte(*msg.Messages[0].Body), &event)
+	}
 }
 
 const testStreamPayload = `
@@ -69,10 +83,13 @@ const testStreamPayload = `
                         "N": "1"
                     },
                     "committedAt": {
-                        "N": "1583853537244"
+                        "N": "1583923566919"
                     },
-                    "messagePosition": {
+                    "position": {
                         "N": "1"
+                    },
+					"type": {
+                        "S": "testevent"
                     },
                     "eventData": {
                         "B": "CnsKICAiVGVzdCI6ICJWYWx1ZSIKfQ=="

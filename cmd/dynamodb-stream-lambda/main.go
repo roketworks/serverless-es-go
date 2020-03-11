@@ -19,12 +19,12 @@ var sqsSvc = sqs.New(awsSession)
 func handler(e events.DynamoDBEvent) error {
 	queues := viper.GetStringSlice("projections.queues")
 
-	handlerInput := &serverless_es_go.DynamoDbStreamHandlerInput{
+	handlerInput := &esgo.DynamoDbStreamHandlerInput{
 		Sqs:        sqsSvc,
 		QueueNames: queues,
 	}
 
-	if err := serverless_es_go.HandleDynamoDbStream(handlerInput, e); err != nil {
+	if err := esgo.HandleDynamoDbStream(handlerInput, e); err != nil {
 		return err
 	}
 	return nil

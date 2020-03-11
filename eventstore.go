@@ -55,6 +55,27 @@ func GetByStreamId(es *DynamoDbEventStore, params *GetStreamInput) ([]Event, err
 	return res, nil
 }
 
+func GetLatestByStreamId(es *DynamoDbEventStore, streamId string) (int, error) {
+	input := &dynamodb.QueryInput{
+		TableName:              aws.String(es.EventTable),
+		ConsistentRead:         aws.Bool(true),
+		KeyConditionExpression: aws.String("streamId = :a"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":a": {
+				S: aws.String(streamId),
+			},
+		},
+		Limit:            aws.Int64(1),
+		ScanIndexForward: aws.Bool(false),
+	}
+
+	if res, err := queryEvents(es, input); err != nil {
+		return -1, err
+	} else {
+		return res[0].Version, nil
+	}
+}
+
 func GetAllStream(es *DynamoDbEventStore, sequence int) ([]Event, error) {
 	input := &dynamodb.QueryInput{
 		TableName: aws.String(es.EventTable),

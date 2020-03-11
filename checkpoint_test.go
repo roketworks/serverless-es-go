@@ -9,10 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var connectionString = testConfig.Postgres.ConnectionString
-
 func TestSaveNewCheckpoint(t *testing.T) {
-	cfg := CheckpointConfig{ConnectionString: connectionString, ProjectionName: "test-projection"}
+	cfg := CheckpointConfig{ConnectionString: testConfig.Postgres.ConnectionString, ProjectionName: "test-projection"}
 	timestamp := getTimestamp()
 	err := SaveCheckpoint(&cfg, 1, timestamp)
 	assert.Nil(t, err)
@@ -20,7 +18,7 @@ func TestSaveNewCheckpoint(t *testing.T) {
 }
 
 func verifyCheckpoint(t *testing.T, name string, position int, timestamp int64) {
-	db, err := sql.Open("postgres", connectionString)
+	db, err := sql.Open("postgres", testConfig.Postgres.ConnectionString)
 	assert.Nil(t, err)
 
 	var projectionName string

@@ -45,7 +45,7 @@ func init() {
 	viper.EnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetConfigName("config_test")
 	viper.SetConfigType("toml")
-	viper.AddConfigPath("../test")
+	viper.AddConfigPath(".")
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println(err)

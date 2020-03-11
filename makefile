@@ -1,7 +1,9 @@
-.PHONY: mod build test create-test-tables
+.PHONY: mod test create-local-tables create-local-queues
 
 DYNAMODB_ENDPOINT ?= http://localhost:8042
 SQS_ENDPOINT ?= http://localhost:9324
+
+setup: up create-local-tables create-local-queues
 
 mod:
 	GO111MODULE=on go mod tidy
@@ -13,6 +15,9 @@ build:
 
 test:
 	go test -v .
+
+up:
+	docker-compose up -d
 
 create-local-tables:
 	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake_key AWS_SECRET_ACCESS_KEY=fake_secret \

@@ -11,7 +11,11 @@ import (
 	"testing"
 )
 
-var es = getEventStore()
+var es *DynamoDbEventStore
+
+func init() {
+	es = getEventStore()
+}
 
 func TestSaveShouldSaveToNewStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
@@ -45,6 +49,19 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 		assert.LessOrEqual(t, event.CommittedAt, postCommit)
 		assert.Equal(t, []byte(eventData), event.Data)
 	}
+}
+
+func TestGetLatestByStreamId(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+
+	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
+
+	version, err := GetLatestByStreamId(es, streamId)
+	assert.Nil(t, err)
+	assert.Equal(t, 4, version)
 }
 
 func TestGetAllStream(t *testing.T) {

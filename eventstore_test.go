@@ -65,7 +65,7 @@ func TestGetLatestByStreamId(t *testing.T) {
 
 	version, err = GetLatestByStreamId(es, "non-existing-stream")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, version)
+	assert.Equal(t, 0, version)
 }
 
 func TestGetAllStream(t *testing.T) {

@@ -73,7 +73,7 @@ func GetLatestByStreamId(es *DynamoDbEventStore, streamId string) (int, error) {
 		return -1, err
 	} else {
 		if len(res) == 0 {
-			return 1, nil
+			return 0, nil
 		}
 		return res[0].Version, nil
 	}
@@ -152,6 +152,9 @@ func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventTyp
 	commitTime := strconv.FormatInt(getTimestamp(), 10)
 
 	position, err := updateMessagePosition(es)
+	if err != nil {
+		return -1, err
+	}
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{

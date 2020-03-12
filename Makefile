@@ -11,7 +11,7 @@ mod:
 
 build:
 	CGO_ENABLED=0 GOOS=linux go build -v
-	CGO_ENABLED=0 GOOS=linux go build -v ./cmd/dynamodb-stream-lambda
+	CGO_ENABLED=0 GOOS=linux go build -o dist/sns-to-dynamodb/main -v ./cmd/dynamodb-stream-lambda
 
 test:
 	go test -v .

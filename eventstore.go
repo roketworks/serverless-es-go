@@ -72,6 +72,9 @@ func GetLatestByStreamId(es *DynamoDbEventStore, streamId string) (int, error) {
 	if res, err := queryEvents(es, input); err != nil {
 		return -1, err
 	} else {
+		if len(res) == 0 {
+			return 1, nil
+		}
 		return res[0].Version, nil
 	}
 }

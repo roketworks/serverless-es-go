@@ -14,15 +14,8 @@ type Config struct {
 		AccessSecret string `mapstructure:"access_secret"`
 
 		DynamoDb struct {
-			Endpoint string
-
-			Es struct {
-				TableName string `mapstructure:"table_name"`
-			}
-
-			Sequences struct {
-				TableName string `mapstructure:"table_name"`
-			}
+			Endpoint  string
+			TableName string `mapstructure:"table_name"`
 		}
 
 		Sqs struct {

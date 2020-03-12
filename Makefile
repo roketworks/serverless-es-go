@@ -3,7 +3,7 @@
 DYNAMODB_ENDPOINT ?= http://localhost:8042
 SQS_ENDPOINT ?= http://localhost:9324
 
-setup: up create-local-tables create-local-queues
+setup: up create-local-table create-local-queues
 
 mod:
 	GO111MODULE=on go mod tidy
@@ -19,12 +19,10 @@ test:
 up:
 	docker-compose up -d
 
-create-local-tables:
-	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake_key AWS_SECRET_ACCESS_KEY=fake_secret \
-		aws dynamodb create-table --endpoint-url $(DYNAMODB_ENDPOINT) --table-name sequences --billing-mode PAY_PER_REQUEST \
-		--attribute-definitions AttributeName=sequence,AttributeType=S \
-		--key-schema AttributeName=sequence,KeyType=HASH
+down:
+	docker-compose down --remove-orphans
 
+create-local-table:
 	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake_key AWS_SECRET_ACCESS_KEY=fake_secret \
 		aws dynamodb create-table --endpoint-url $(DYNAMODB_ENDPOINT) --table-name eventstore --billing-mode PAY_PER_REQUEST \
 		--attribute-definitions \

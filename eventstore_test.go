@@ -26,8 +26,6 @@ func TestSaveShouldSaveToNewStream(t *testing.T) {
 
 func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
-	initialPosition, err := getLatestMessagePosition(es)
-	assert.Nil(t, err)
 
 	preCommitTime := getTimestamp()
 	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
@@ -44,7 +42,6 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	for i, event := range events {
 		assert.Equal(t, streamId, event.StreamId)
 		assert.Equal(t, i+1, event.Version)
-		assert.Equal(t, initialPosition+i+1, event.MessagePosition)
 		assert.GreaterOrEqual(t, event.CommittedAt, preCommitTime)
 		assert.LessOrEqual(t, event.CommittedAt, postCommit)
 		assert.Equal(t, []byte(eventData), event.Data)
@@ -68,9 +65,24 @@ func TestGetLatestByStreamId(t *testing.T) {
 	assert.Equal(t, 0, version)
 }
 
+func TestGetLatestByAllStream(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+	initialPosition, err := GetLatestByAllStream(es)
+	assert.Nil(t, err)
+
+	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
+	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
+
+	version, err := GetLatestByAllStream(es)
+	assert.Nil(t, err)
+	assert.Equal(t, initialPosition+4, version)
+}
+
 func TestGetAllStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
-	initialPosition, err := getLatestMessagePosition(es)
+	initialPosition, err := GetLatestByAllStream(es)
 	assert.Nil(t, err)
 
 	preCommitTime := getTimestamp()
@@ -80,7 +92,7 @@ func TestGetAllStream(t *testing.T) {
 	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
 	postCommit := getTimestamp()
 
-	events, err := GetAllStream(es, initialPosition+1)
+	events, err := GetAllStream(es, initialPosition)
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(events), 4)
@@ -88,7 +100,7 @@ func TestGetAllStream(t *testing.T) {
 	for i, event := range events {
 		assert.Equal(t, streamId, event.StreamId)
 		assert.Equal(t, i+1, event.Version)
-		assert.Equal(t, initialPosition+i+1, event.MessagePosition)
+		assert.Equal(t, initialPosition+1+int64(i), event.MessagePosition)
 		assert.GreaterOrEqual(t, event.CommittedAt, preCommitTime)
 		assert.LessOrEqual(t, event.CommittedAt, postCommit)
 		assert.Equal(t, []byte(eventData), event.Data)
@@ -100,8 +112,7 @@ func getEventStore() *DynamoDbEventStore {
 	key := testConfig.Aws.AccessKey
 	secret := testConfig.Aws.AccessSecret
 	endpoint := testConfig.Aws.DynamoDb.Endpoint
-	esTableName := testConfig.Aws.DynamoDb.Es.TableName
-	sequencesTableName := testConfig.Aws.DynamoDb.Sequences.TableName
+	esTableName := testConfig.Aws.DynamoDb.TableName
 
 	var awsConfig = aws.Config{
 		Endpoint:    aws.String(endpoint),
@@ -111,7 +122,7 @@ func getEventStore() *DynamoDbEventStore {
 
 	var awsSession = session.Must(session.NewSession(&awsConfig))
 	var dynamoSvc = dynamodb.New(awsSession)
-	return &DynamoDbEventStore{Db: dynamoSvc, EventTable: esTableName, SequenceTable: sequencesTableName}
+	return &DynamoDbEventStore{Db: dynamoSvc, EventTable: esTableName}
 }
 
 const eventData string = `

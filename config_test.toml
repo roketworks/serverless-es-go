@@ -5,12 +5,7 @@ access_secret = "fake_secret"
 
 [aws.dynamodb]
 endpoint = "http://localhost:8042"
-
-[aws.dynamodb.es]
 table_name = "eventstore"
-
-[aws.dynamodb.sequences]
-table_name = "sequences"
 
 [aws.sqs]
 endpoint = "http://localhost:9324"

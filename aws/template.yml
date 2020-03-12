@@ -12,21 +12,6 @@ Parameters:
 
 Resources:
 
-  SequenceTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Ref SequenceTableName
-      AttributeDefinitions:
-        - AttributeName: sequence
-          AttributeType: S
-      KeySchema:
-        - AttributeName: sequence
-          KeyType: HASH
-      BillingMode: PAY_PER_REQUEST
-      TimeToLiveSpecification:
-        AttributeName: ttl
-        Enabled: true
-
   EventStoreTable:
     Type: AWS::DynamoDB::Table
     Properties:

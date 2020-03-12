@@ -13,9 +13,8 @@ import (
 )
 
 type DynamoDbEventStore struct {
-	Db            dynamodbiface.DynamoDBAPI
-	EventTable    string
-	SequenceTable string
+	Db         dynamodbiface.DynamoDBAPI
+	EventTable string
 }
 
 type GetStreamInput struct {
@@ -27,7 +26,7 @@ type Event struct {
 	StreamId        string `dynamodbav:"streamId"`
 	Version         int    `dynamodbav:"version"`
 	CommittedAt     int64  `dynamodbav:"committedAt"`
-	MessagePosition int    `dynamodbav:"position"`
+	MessagePosition int64  `dynamodbav:"position"`
 	Type            string `dynamodbav:"type"`
 	Data            []byte `dynamodbav:"eventData"`
 }
@@ -79,18 +78,41 @@ func GetLatestByStreamId(es *DynamoDbEventStore, streamId string) (int, error) {
 	}
 }
 
-func GetAllStream(es *DynamoDbEventStore, sequence int) ([]Event, error) {
+func GetLatestByAllStream(es *DynamoDbEventStore) (int64, error) {
+	input := &dynamodb.QueryInput{
+		TableName:              aws.String(es.EventTable),
+		KeyConditionExpression: aws.String("active = :a"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":a": {
+				N: aws.String("1"),
+			},
+		},
+		IndexName:        aws.String("active-position-index"),
+		ScanIndexForward: aws.Bool(false),
+		Limit:            aws.Int64(1),
+	}
+
+	if res, err := queryEvents(es, input); err != nil {
+		return -1, err
+	} else {
+		if len(res) == 0 {
+			return 0, nil
+		}
+		return res[0].MessagePosition, nil
+	}
+}
+
+func GetAllStream(es *DynamoDbEventStore, position int64) ([]Event, error) {
 	input := &dynamodb.QueryInput{
 		TableName: aws.String(es.EventTable),
-		//ConsistentRead:         aws.Bool(true),
 		ExpressionAttributeNames: map[string]*string{
 			"#position": aws.String("position"),
 		},
-		KeyConditionExpression: aws.String("active = :a AND #position >= :p"),
+		KeyConditionExpression: aws.String("active = :a AND #position > :p"),
 		IndexName:              aws.String("active-position-index"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":p": {
-				N: aws.String(strconv.Itoa(sequence)),
+				N: aws.String(strconv.FormatInt(position, 10)),
 			},
 			":a": {
 				N: aws.String("1"),
@@ -148,13 +170,14 @@ func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Eve
 	return res, nil
 }
 
-func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventType string, event []byte) (int, error) {
+func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventType string, event []byte) (int64, error) {
 	commitTime := strconv.FormatInt(getTimestamp(), 10)
-
-	position, err := updateMessagePosition(es)
+	lastPosition, err := GetLatestByAllStream(es)
 	if err != nil {
 		return -1, err
 	}
+
+	position := lastPosition + 1
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
@@ -167,11 +190,11 @@ func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventTyp
 			"version": {
 				N: aws.String(strconv.Itoa(expectedVersion)),
 			},
-			"position": {
-				N: aws.String(strconv.Itoa(position)),
-			},
 			"active": {
 				N: aws.String("1"),
+			},
+			"position": {
+				N: aws.String(strconv.FormatInt(position, 10)),
 			},
 			"type": {
 				S: aws.String(eventType),
@@ -180,7 +203,10 @@ func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventTyp
 				B: event,
 			},
 		},
-		ConditionExpression: aws.String("attribute_not_exists(version)"),
+		ExpressionAttributeNames: map[string]*string{
+			"#position": aws.String("position"),
+		},
+		ConditionExpression: aws.String("attribute_not_exists(version) AND attribute_not_exists(#position)"),
 		ReturnValues:        aws.String("NONE"),
 		TableName:           aws.String(es.EventTable),
 	}
@@ -205,109 +231,4 @@ func getTimestamp() int64 {
 	now := time.Now()
 	nano := now.UnixNano()
 	return nano / 1000000
-}
-
-func getLatestMessagePosition(es *DynamoDbEventStore) (int, error) {
-	input := &dynamodb.QueryInput{
-		TableName:      aws.String(es.SequenceTable),
-		ConsistentRead: aws.Bool(true),
-		ExpressionAttributeNames: map[string]*string{
-			"#sequence": aws.String("sequence"),
-		},
-		KeyConditionExpression: aws.String("#sequence = :v"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v": {
-				S: aws.String("messages"),
-			},
-		},
-	}
-
-	queryOutput, err := es.Db.Query(input)
-	if err != nil {
-		return -1, err
-	}
-
-	if *queryOutput.Count == 0 {
-		if err = insertSequence(es); err != nil {
-			return -1, err
-		}
-		return 0, nil
-	}
-
-	if *queryOutput.Count > 1 {
-		countErr := errors.New("more than 1 matching sequence found")
-		return -1, countErr
-	}
-
-	currentValue, err := strconv.Atoi(*queryOutput.Items[0]["counter"].N)
-	if err != nil {
-		return -1, err
-	}
-
-	return currentValue, nil
-}
-
-func updateMessagePosition(es *DynamoDbEventStore) (int, error) {
-	currentValue, err := getLatestMessagePosition(es)
-	if err != nil {
-		return -1, err
-	}
-
-	newValue := currentValue + 1
-
-	updateInput := &dynamodb.UpdateItemInput{
-		TableName:    aws.String(es.SequenceTable),
-		ReturnValues: aws.String("UPDATED_NEW"),
-		ExpressionAttributeNames: map[string]*string{
-			"#counter": aws.String("counter"),
-		},
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":c": {
-				N: aws.String(strconv.Itoa(currentValue)),
-			},
-			":ns": {
-				N: aws.String(strconv.Itoa(newValue)),
-			},
-		},
-		ConditionExpression: aws.String("(#counter = :c)"),
-		UpdateExpression:    aws.String("SET #counter = :ns"),
-		Key: map[string]*dynamodb.AttributeValue{
-			"sequence": {
-				S: aws.String("messages"),
-			},
-		},
-	}
-
-	_, err = es.Db.UpdateItem(updateInput)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return -1, errors.New("sequence not at expected value")
-			default:
-				return -1, aerr
-			}
-		}
-		return -1, err
-	}
-
-	return newValue, nil
-}
-
-func insertSequence(es *DynamoDbEventStore) error {
-	putInput := &dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"sequence": {
-				S: aws.String("messages"),
-			},
-			"counter": {
-				N: aws.String("0"),
-			},
-		},
-		ReturnValues: aws.String("NONE"),
-		TableName:    aws.String(es.SequenceTable),
-	}
-
-	_, err := es.Db.PutItem(putInput)
-	return err
 }

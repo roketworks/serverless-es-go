@@ -1,9 +1,9 @@
-.PHONY: mod test create-local-tables create-local-queues
+.PHONY: mod test create-table create-queue
 
 DYNAMODB_ENDPOINT ?= http://localhost:8042
 SQS_ENDPOINT ?= http://localhost:9324
 
-setup: up create-local-table create-local-queues
+setup: up create-table create-queue
 
 mod:
 	GO111MODULE=on go mod tidy
@@ -22,7 +22,7 @@ up:
 down:
 	docker-compose down --remove-orphans
 
-create-local-table:
+create-table:
 	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake_key AWS_SECRET_ACCESS_KEY=fake_secret \
 		aws dynamodb create-table --endpoint-url $(DYNAMODB_ENDPOINT) --table-name eventstore --billing-mode PAY_PER_REQUEST \
 		--attribute-definitions \
@@ -36,6 +36,6 @@ create-local-table:
 			"IndexName=active-committedAt-index,KeySchema=[{AttributeName=active,KeyType=HASH},{AttributeName=committedAt,KeyType=RANGE}],Projection={ProjectionType=ALL}" \
 			"IndexName=active-position-index,KeySchema=[{AttributeName=active,KeyType=HASH},{AttributeName=position,KeyType=RANGE}],Projection={ProjectionType=ALL}"
 
-create-local-queues:
+create-queue:
 	AWS_DEFAULT_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake_key AWS_SECRET_ACCESS_KEY=fake_secret \
 		aws sqs create-queue --endpoint $(SQS_ENDPOINT) --queue-name projections.fifo --attributes FifoQueue=true,ContentBasedDeduplication=true

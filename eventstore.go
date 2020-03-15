@@ -187,49 +187,7 @@ func (es *DynamoDbEventStore) ReadAllEventsBackward(position int64, count int64)
 	}
 }
 
-func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Event, error) {
-	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
-		queryInput.ExclusiveStartKey = lastKey
-		result, err := es.Db.Query(queryInput)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		var events []Event
-		err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &events)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		return events, result.LastEvaluatedKey, nil
-	}
-
-	var res []Event
-	results, lastKey, err := queryFunc(nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	for {
-		for _, r := range results {
-			res = append(res, r)
-		}
-
-		results, lastKey, err = queryFunc(lastKey)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if lastKey == nil || int64(len(results)) >= *queryInput.Limit {
-			break
-		}
-	}
-
-	return res, nil
-}
-
+// Save a new event to a specified stream. Returns the global position of the message.
 func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventType string, event []byte) (int64, error) {
 	commitTime := strconv.FormatInt(getTimestamp(), 10)
 	lastEvent, err := es.ReadAllEventsBackward(PositionEnd, 1)
@@ -292,6 +250,49 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 	}
 
 	return position, nil
+}
+
+func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Event, error) {
+	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
+		queryInput.ExclusiveStartKey = lastKey
+		result, err := es.Db.Query(queryInput)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		var events []Event
+		err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &events)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return events, result.LastEvaluatedKey, nil
+	}
+
+	var res []Event
+	results, lastKey, err := queryFunc(nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		for _, r := range results {
+			res = append(res, r)
+		}
+
+		results, lastKey, err = queryFunc(lastKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if lastKey == nil || int64(len(results)) >= *queryInput.Limit {
+			break
+		}
+	}
+
+	return res, nil
 }
 
 func getTimestamp() int64 {

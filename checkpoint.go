@@ -5,13 +5,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type CheckpointConfig struct {
+type PostgresCheckpoint struct {
 	ConnectionString string
 	ProjectionName   string
 }
 
-func SaveCheckpoint(cfg *CheckpointConfig, position int, timestamp int64) error {
-	db, err := sql.Open("postgres", cfg.ConnectionString)
+func (checkpoint *PostgresCheckpoint) SaveCheckpoint(position int, timestamp int64) error {
+	db, err := sql.Open("postgres", checkpoint.ConnectionString)
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func SaveCheckpoint(cfg *CheckpointConfig, position int, timestamp int64) error 
 	if tx, err = db.Begin(); err != nil {
 		return err
 	}
-	if _, err = tx.Exec(update, cfg.ProjectionName, position, timestamp); err != nil {
+	if _, err = tx.Exec(update, checkpoint.ProjectionName, position, timestamp); err != nil {
 		tx.Rollback()
 		db.Close()
 		return err

@@ -25,7 +25,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 
 	var awsSession = session.Must(session.NewSession(&awsConfig))
 	var sqsSvc = sqs.New(awsSession)
-	handlerInput := DynamoDbStreamHandlerInput{
+	handler := &DynamoDbStreamHandler{
 		Sqs:        sqsSvc,
 		QueueNames: testConfig.Projections.QueueNames,
 	}
@@ -35,7 +35,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 		panic(err)
 	}
 
-	err := HandleDynamoDbStream(&handlerInput, testEvent)
+	err := handler.HandleDynamoDbStream(testEvent)
 	assert.Nil(t, err)
 
 	for _, queueName := range testConfig.Projections.QueueNames {

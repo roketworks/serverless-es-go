@@ -35,7 +35,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 		panic(err)
 	}
 
-	err := handler.HandleDynamoDbStream(testEvent)
+	err := handler.Handle(testEvent)
 	assert.Nil(t, err)
 
 	for _, queueName := range testConfig.Projections.QueueNames {

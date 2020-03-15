@@ -10,7 +10,9 @@ type PostgresCheckpoint struct {
 	ProjectionName   string
 }
 
-func (checkpoint *PostgresCheckpoint) SaveCheckpoint(position int, timestamp int64) error {
+// Save checkpoint position to postgres database.
+// Will also create/migrate schema if doesn't exist.
+func (checkpoint *PostgresCheckpoint) Save(position int, timestamp int64) error {
 	db, err := sql.Open("postgres", checkpoint.ConnectionString)
 	if err != nil {
 		return err
@@ -25,12 +27,17 @@ func (checkpoint *PostgresCheckpoint) SaveCheckpoint(position int, timestamp int
 		return err
 	}
 	if _, err = tx.Exec(update, checkpoint.ProjectionName, position, timestamp); err != nil {
-		tx.Rollback()
-		db.Close()
+		_ = tx.Rollback()
+		_ = db.Close()
 		return err
 	}
-	tx.Commit()
-	db.Close()
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	if err = db.Close(); err != nil {
+		return err
+	}
 
 	return nil
 }

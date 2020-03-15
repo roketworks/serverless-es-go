@@ -16,7 +16,8 @@ type DynamoDbStreamHandler struct {
 	Sqs        sqsiface.SQSAPI
 }
 
-func (handler *DynamoDbStreamHandler) HandleDynamoDbStream(event events.DynamoDBEvent) error {
+// Handle DynamoDBEvent from DynamoDb stream to project to SQS queue
+func (handler *DynamoDbStreamHandler) Handle(event events.DynamoDBEvent) error {
 	for _, r := range event.Records {
 		switch r.EventName {
 		case "INSERT":
@@ -38,7 +39,7 @@ func (handler *DynamoDbStreamHandler) sendEventToSqs(record events.DynamoDBEvent
 		return err
 	}
 
-	json, err := json.Marshal(event)
+	eventJson, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
@@ -55,7 +56,7 @@ func (handler *DynamoDbStreamHandler) sendEventToSqs(record events.DynamoDBEvent
 		sendMessage := sqs.SendMessageInput{
 			QueueUrl:       queueUrl.QueueUrl,
 			MessageGroupId: aws.String(event.StreamId),
-			MessageBody:    aws.String(string(json)),
+			MessageBody:    aws.String(string(eventJson)),
 		}
 
 		if _, err := handler.Sqs.SendMessage(&sendMessage); err != nil {

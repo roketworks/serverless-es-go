@@ -17,10 +17,10 @@ type DynamoDbEventStore struct {
 	EventTable string
 }
 
-type GetStreamInput struct {
-	StreamId string
-	Version  int
-}
+const (
+	PositionStart = 0
+	PositionEnd   = -1
+)
 
 type Event struct {
 	StreamId        string `dynamodbav:"streamId"`
@@ -31,19 +31,33 @@ type Event struct {
 	Data            []byte `dynamodbav:"eventData"`
 }
 
-func GetByStreamId(es *DynamoDbEventStore, params *GetStreamInput) ([]Event, error) {
-	input := &dynamodb.QueryInput{
-		TableName:              aws.String(es.EventTable),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String("streamId = :a AND version >= :v"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":a": {
-				S: aws.String(params.StreamId),
-			},
-			":v": {
-				N: aws.String(strconv.Itoa(params.Version)),
-			},
+// ReadStreamEventsForward reads from the specified stream id starting at specified index and reads forward by the count
+// Query is inclusive of start position
+func (es *DynamoDbEventStore) ReadStreamEventsForward(streamId string, start int64, count int64) ([]Event, error) {
+	keyCondition := "streamId = :s"
+	expressionValues := map[string]*dynamodb.AttributeValue{
+		":s": {
+			S: aws.String(streamId),
 		},
+	}
+
+	if start != PositionStart {
+		keyCondition += " AND version >= :v"
+		expressionValues[":v"] = &dynamodb.AttributeValue{
+			N: aws.String(strconv.FormatInt(start, 10)),
+		}
+	}
+
+	input := &dynamodb.QueryInput{
+		TableName:                 aws.String(es.EventTable),
+		ConsistentRead:            aws.Bool(true),
+		KeyConditionExpression:    aws.String(keyCondition),
+		ExpressionAttributeValues: expressionValues,
+		ScanIndexForward:          aws.Bool(true),
+	}
+
+	if count != PositionEnd {
+		input.Limit = aws.Int64(count)
 	}
 
 	res, err := queryEvents(es, input)
@@ -54,70 +68,75 @@ func GetByStreamId(es *DynamoDbEventStore, params *GetStreamInput) ([]Event, err
 	return res, nil
 }
 
-func GetLatestByStreamId(es *DynamoDbEventStore, streamId string) (int, error) {
-	input := &dynamodb.QueryInput{
-		TableName:              aws.String(es.EventTable),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String("streamId = :a"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":a": {
-				S: aws.String(streamId),
-			},
+// ReadStreamEventsBackward reads from the specified stream id starting at specified index and reads backward by the count
+// Query is inclusive of start position
+func (es *DynamoDbEventStore) ReadStreamEventsBackward(streamId string, start int64, count int64) ([]Event, error) {
+	keyCondition := "streamId = :s"
+	expressionValues := map[string]*dynamodb.AttributeValue{
+		":s": {
+			S: aws.String(streamId),
 		},
-		Limit:            aws.Int64(1),
-		ScanIndexForward: aws.Bool(false),
 	}
 
-	if res, err := queryEvents(es, input); err != nil {
-		return -1, err
-	} else {
-		if len(res) == 0 {
-			return 0, nil
+	if start != PositionEnd {
+		keyCondition += " AND version <= :v"
+		expressionValues[":v"] = &dynamodb.AttributeValue{
+			N: aws.String(strconv.FormatInt(start, 10)),
 		}
-		return res[0].Version, nil
 	}
+
+	input := &dynamodb.QueryInput{
+		TableName:                 aws.String(es.EventTable),
+		ConsistentRead:            aws.Bool(true),
+		KeyConditionExpression:    aws.String(keyCondition),
+		ExpressionAttributeValues: expressionValues,
+		ScanIndexForward:          aws.Bool(false),
+	}
+
+	if count != PositionStart {
+		input.Limit = aws.Int64(count)
+	}
+
+	res, err := queryEvents(es, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
-func GetLatestByAllStream(es *DynamoDbEventStore) (int64, error) {
-	input := &dynamodb.QueryInput{
-		TableName:              aws.String(es.EventTable),
-		KeyConditionExpression: aws.String("active = :a"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":a": {
-				N: aws.String("1"),
-			},
+// ReadAllEventsForward reads from events across all streams starting at specified index and reads forward by the count
+// Query is inclusive of start position
+func (es *DynamoDbEventStore) ReadAllEventsForward(position int64, count int64) ([]Event, error) {
+	keyCondition := "active = :a"
+	var expressionNames map[string]*string = nil
+	expressionValues := map[string]*dynamodb.AttributeValue{
+		":a": {
+			N: aws.String("1"),
 		},
-		IndexName:        aws.String("active-position-index"),
-		ScanIndexForward: aws.Bool(false),
-		Limit:            aws.Int64(1),
 	}
 
-	if res, err := queryEvents(es, input); err != nil {
-		return -1, err
-	} else {
-		if len(res) == 0 {
-			return 0, nil
-		}
-		return res[0].MessagePosition, nil
-	}
-}
-
-func GetAllStream(es *DynamoDbEventStore, position int64) ([]Event, error) {
-	input := &dynamodb.QueryInput{
-		TableName: aws.String(es.EventTable),
-		ExpressionAttributeNames: map[string]*string{
+	if position != PositionStart {
+		keyCondition += " AND #position >= :p"
+		expressionNames = map[string]*string{
 			"#position": aws.String("position"),
-		},
-		KeyConditionExpression: aws.String("active = :a AND #position > :p"),
-		IndexName:              aws.String("active-position-index"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":p": {
-				N: aws.String(strconv.FormatInt(position, 10)),
-			},
-			":a": {
-				N: aws.String("1"),
-			},
-		},
+		}
+		expressionValues[":p"] = &dynamodb.AttributeValue{
+			N: aws.String(strconv.FormatInt(position, 10)),
+		}
+	}
+
+	input := &dynamodb.QueryInput{
+		TableName:                 aws.String(es.EventTable),
+		IndexName:                 aws.String("active-position-index"),
+		KeyConditionExpression:    aws.String(keyCondition),
+		ExpressionAttributeNames:  expressionNames,
+		ExpressionAttributeValues: expressionValues,
+		ScanIndexForward:          aws.Bool(true),
+	}
+
+	if count != PositionEnd {
+		input.Limit = aws.Int64(count)
 	}
 
 	if res, err := queryEvents(es, input); err != nil {
@@ -127,54 +146,60 @@ func GetAllStream(es *DynamoDbEventStore, position int64) ([]Event, error) {
 	}
 }
 
-func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Event, error) {
-	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
-		queryInput.ExclusiveStartKey = lastKey
-		result, err := es.Db.Query(queryInput)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		var events []Event
-		err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &events)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		return events, result.LastEvaluatedKey, nil
+// ReadAllEventsBackward reads from events across all streams starting at specified index and reads backward by the count
+// Query is inclusive of start position
+func (es *DynamoDbEventStore) ReadAllEventsBackward(position int64, count int64) ([]Event, error) {
+	keyCondition := "active = :a"
+	var expressionNames map[string]*string = nil
+	expressionValues := map[string]*dynamodb.AttributeValue{
+		":a": {
+			N: aws.String("1"),
+		},
 	}
 
-	var res []Event
-	results, lastKey, err := queryFunc(nil)
+	if position != PositionEnd {
+		keyCondition += " AND #position <= :p"
+		expressionNames = map[string]*string{
+			"#position": aws.String("position"),
+		}
+		expressionValues[":p"] = &dynamodb.AttributeValue{
+			N: aws.String(strconv.FormatInt(position, 10)),
+		}
+	}
 
-	if err != nil {
+	input := &dynamodb.QueryInput{
+		TableName:                 aws.String(es.EventTable),
+		IndexName:                 aws.String("active-position-index"),
+		KeyConditionExpression:    aws.String(keyCondition),
+		ExpressionAttributeNames:  expressionNames,
+		ExpressionAttributeValues: expressionValues,
+		ScanIndexForward:          aws.Bool(false),
+	}
+
+	if count != PositionStart {
+		input.Limit = aws.Int64(count)
+	}
+
+	if res, err := queryEvents(es, input); err != nil {
 		return nil, err
+	} else {
+		return res, nil
 	}
-
-	for _, r := range results {
-		res = append(res, r)
-	}
-
-	for lastKey != nil {
-		for _, r := range results {
-			res = append(res, r)
-		}
-
-		results, lastKey, err = queryFunc(lastKey)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return res, nil
 }
 
-func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventType string, event []byte) (int64, error) {
+// Save a new event to a specified stream. Returns the global position of the message.
+func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventType string, event []byte) (int64, error) {
 	commitTime := strconv.FormatInt(getTimestamp(), 10)
-	lastPosition, err := GetLatestByAllStream(es)
+	lastEvent, err := es.ReadAllEventsBackward(PositionEnd, 1)
 	if err != nil {
 		return -1, err
+	}
+
+	var lastPosition int64
+	if lastEvent == nil || len(lastEvent) == 0 {
+		lastPosition = 0
+	} else {
+		lastPosition = lastEvent[0].MessagePosition
 	}
 
 	position := lastPosition + 1
@@ -225,6 +250,49 @@ func Save(es *DynamoDbEventStore, streamId string, expectedVersion int, eventTyp
 	}
 
 	return position, nil
+}
+
+func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Event, error) {
+	queryFunc := func(lastKey map[string]*dynamodb.AttributeValue) ([]Event, map[string]*dynamodb.AttributeValue, error) {
+		queryInput.ExclusiveStartKey = lastKey
+		result, err := es.Db.Query(queryInput)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		var events []Event
+		err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &events)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return events, result.LastEvaluatedKey, nil
+	}
+
+	var res []Event
+	results, lastKey, err := queryFunc(nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		for _, r := range results {
+			res = append(res, r)
+		}
+
+		results, lastKey, err = queryFunc(lastKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if lastKey == nil || int64(len(results)) >= *queryInput.Limit {
+			break
+		}
+	}
+
+	return res, nil
 }
 
 func getTimestamp() int64 {

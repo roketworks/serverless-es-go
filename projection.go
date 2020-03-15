@@ -11,18 +11,19 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 )
 
-type DynamoDbStreamHandlerInput struct {
+type DynamoDbStreamHandler struct {
 	QueueNames []string
 	Sqs        sqsiface.SQSAPI
 }
 
-func HandleDynamoDbStream(input *DynamoDbStreamHandlerInput, event events.DynamoDBEvent) error {
+// Handle DynamoDBEvent from DynamoDb stream to project to SQS queue
+func (handler *DynamoDbStreamHandler) Handle(event events.DynamoDBEvent) error {
 	for _, r := range event.Records {
 		switch r.EventName {
 		case "INSERT":
 			fallthrough
 		case "MODIFY":
-			if err := sendEventToSqs(input, r); err != nil {
+			if err := handler.sendEventToSqs(r); err != nil {
 				return err
 			}
 		default:
@@ -32,19 +33,19 @@ func HandleDynamoDbStream(input *DynamoDbStreamHandlerInput, event events.Dynamo
 	return nil
 }
 
-func sendEventToSqs(input *DynamoDbStreamHandlerInput, record events.DynamoDBEventRecord) error {
+func (handler *DynamoDbStreamHandler) sendEventToSqs(record events.DynamoDBEventRecord) error {
 	var event Event
 	if err := unmarshalStreamImage(record.Change.NewImage, &event); err != nil {
 		return err
 	}
 
-	json, err := json.Marshal(event)
+	eventJson, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
 
-	for _, queueName := range input.QueueNames {
-		queueUrl, err := input.Sqs.GetQueueUrl(&sqs.GetQueueUrlInput{
+	for _, queueName := range handler.QueueNames {
+		queueUrl, err := handler.Sqs.GetQueueUrl(&sqs.GetQueueUrlInput{
 			QueueName: aws.String(queueName),
 		})
 
@@ -55,10 +56,10 @@ func sendEventToSqs(input *DynamoDbStreamHandlerInput, record events.DynamoDBEve
 		sendMessage := sqs.SendMessageInput{
 			QueueUrl:       queueUrl.QueueUrl,
 			MessageGroupId: aws.String(event.StreamId),
-			MessageBody:    aws.String(string(json)),
+			MessageBody:    aws.String(string(eventJson)),
 		}
 
-		if _, err := input.Sqs.SendMessage(&sendMessage); err != nil {
+		if _, err := handler.Sqs.SendMessage(&sendMessage); err != nil {
 			return err
 		}
 	}

@@ -10,9 +10,9 @@ import (
 )
 
 func TestSaveNewCheckpoint(t *testing.T) {
-	cfg := CheckpointConfig{ConnectionString: testConfig.Postgres.ConnectionString, ProjectionName: "test-projection"}
+	checkpoint := &PostgresCheckpoint{ConnectionString: testConfig.Postgres.ConnectionString, ProjectionName: "test-projection"}
 	timestamp := getTimestamp()
-	err := SaveCheckpoint(&cfg, 1, timestamp)
+	err := checkpoint.Save(1, timestamp)
 	assert.Nil(t, err)
 	verifyCheckpoint(t, "test-projection", 1, timestamp)
 }

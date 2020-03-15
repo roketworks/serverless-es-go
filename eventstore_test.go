@@ -20,24 +20,21 @@ func init() {
 func TestSaveShouldSaveToNewStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
 
-	_, err := Save(es, streamId, 1, "event-type", []byte(eventData))
+	_, err := es.Save(streamId, 1, "event-type", []byte(eventData))
 	assert.Nil(t, err)
 }
 
-func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
+func TestDynamoDbEventStore_ReadStreamEventsForward_FromStart_ToEnd(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
 
 	preCommitTime := getTimestamp()
-	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
+	saveTestEvents(streamId, 4, 1)
 	postCommit := getTimestamp()
 
-	events, err := GetByStreamId(es, &GetStreamInput{StreamId: streamId, Version: 1})
+	events, err := es.ReadStreamEventsForward(streamId, PositionStart, PositionEnd)
 
 	assert.Nil(t, err)
-	assert.Equal(t, len(events), 4)
+	assert.Equal(t, 4, len(events))
 
 	for i, event := range events {
 		assert.Equal(t, streamId, event.StreamId)
@@ -48,62 +45,138 @@ func TestGetStreamByIdShouldGetEventsInStream(t *testing.T) {
 	}
 }
 
-func TestGetLatestByStreamId(t *testing.T) {
+func TestDynamoDbEventStore_ReadStreamEventsForward_FromPositionInStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
-
-	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
-
-	version, err := GetLatestByStreamId(es, streamId)
-	assert.Nil(t, err)
-	assert.Equal(t, 4, version)
-
-	version, err = GetLatestByStreamId(es, "non-existing-stream")
-	assert.Nil(t, err)
-	assert.Equal(t, 0, version)
-}
-
-func TestGetLatestByAllStream(t *testing.T) {
-	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
-	initialPosition, err := GetLatestByAllStream(es)
-	assert.Nil(t, err)
-
-	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
-
-	version, err := GetLatestByAllStream(es)
-	assert.Nil(t, err)
-	assert.Equal(t, initialPosition+4, version)
-}
-
-func TestGetAllStream(t *testing.T) {
-	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
-	initialPosition, err := GetLatestByAllStream(es)
-	assert.Nil(t, err)
 
 	preCommitTime := getTimestamp()
-	_, _ = Save(es, streamId, 1, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 2, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 3, "event-type", []byte(eventData))
-	_, _ = Save(es, streamId, 4, "event-type", []byte(eventData))
+	saveTestEvents(streamId, 4, 1)
 	postCommit := getTimestamp()
 
-	events, err := GetAllStream(es, initialPosition)
+	events, err := es.ReadStreamEventsForward(streamId, 3, 2)
 
 	assert.Nil(t, err)
-	assert.Equal(t, len(events), 4)
+	assert.Equal(t, 2, len(events))
 
 	for i, event := range events {
 		assert.Equal(t, streamId, event.StreamId)
-		assert.Equal(t, i+1, event.Version)
-		assert.Equal(t, initialPosition+1+int64(i), event.MessagePosition)
+		assert.Equal(t, i+3, event.Version)
 		assert.GreaterOrEqual(t, event.CommittedAt, preCommitTime)
 		assert.LessOrEqual(t, event.CommittedAt, postCommit)
 		assert.Equal(t, []byte(eventData), event.Data)
+	}
+}
+
+func TestDynamoDbEventStore_ReadStreamEventsBackward_FromEnd(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+
+	preCommitTime := getTimestamp()
+	saveTestEvents(streamId, 4, 1)
+	postCommit := getTimestamp()
+
+	events, err := es.ReadStreamEventsBackward(streamId, PositionEnd, PositionStart)
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(events))
+	for i, event := range events {
+		assert.Equal(t, streamId, event.StreamId)
+		assert.Equal(t, 4-i, event.Version)
+		assert.GreaterOrEqual(t, event.CommittedAt, preCommitTime)
+		assert.LessOrEqual(t, event.CommittedAt, postCommit)
+		assert.Equal(t, []byte(eventData), event.Data)
+	}
+}
+
+func TestDynamoDbEventStore_ReadStreamEventsBackward_FromPosition(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+
+	preCommitTime := getTimestamp()
+	saveTestEvents(streamId, 4, 1)
+	postCommit := getTimestamp()
+
+	events, err := es.ReadStreamEventsBackward(streamId, 3, 2)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(events))
+	for i, event := range events {
+		assert.Equal(t, streamId, event.StreamId)
+		assert.Equal(t, 3-i, event.Version)
+		assert.GreaterOrEqual(t, event.CommittedAt, preCommitTime)
+		assert.LessOrEqual(t, event.CommittedAt, postCommit)
+		assert.Equal(t, []byte(eventData), event.Data)
+	}
+}
+
+func TestDynamoDbEventStore_ReadAllEventsForward_FromStart_ToEnd(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+	lastEvent, err := es.ReadAllEventsBackward(PositionEnd, 1)
+	assert.Nil(t, err)
+
+	initialPosition := lastEvent[0].MessagePosition
+	saveTestEvents(streamId, 10, 1)
+
+	events, err := es.ReadAllEventsForward(PositionStart, PositionEnd)
+	assert.Nil(t, err)
+	assert.Equal(t, initialPosition + 10, int64(len(events)))
+
+	for i := 0; i < int(initialPosition) + 10; i++ {
+		assert.Equal(t, int64(i)+1, events[i].MessagePosition)
+	}
+}
+
+func TestDynamoDbEventStore_ReadAllEventsForward_FromPosition(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+	lastEvent, err := es.ReadAllEventsBackward(PositionEnd, 1)
+	assert.Nil(t, err)
+
+	initialPosition := lastEvent[0].MessagePosition
+	saveTestEvents(streamId, 10, 1)
+
+	events, err := es.ReadAllEventsForward(initialPosition+1, 5)
+	assert.Nil(t, err)
+	assert.Equal(t,  5, len(events))
+
+	for i := 0; i < 5; i++ {
+		assert.Equal(t, initialPosition+1+int64(i), events[i].MessagePosition)
+	}
+}
+
+func TestDynamoDbEventStore_ReadAllEventsBackward_FromStart_ToEnd(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+	lastEvent, err := es.ReadAllEventsBackward(PositionEnd, 1)
+	assert.Nil(t, err)
+
+	initialPosition := lastEvent[0].MessagePosition
+	saveTestEvents(streamId, 10, 1)
+
+	events, err := es.ReadAllEventsBackward(PositionEnd, PositionStart)
+	assert.Nil(t, err)
+	assert.Equal(t, initialPosition+10, int64(len(events)))
+
+	for i := 0; i < int(initialPosition)+10; i++ {
+		assert.Equal(t, initialPosition+10-int64(i), events[i].MessagePosition)
+	}
+}
+
+func TestDynamoDbEventStore_ReadAllEventsBackward_FromPosition(t *testing.T) {
+	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
+	lastEvent, err := es.ReadAllEventsBackward(PositionEnd, 1)
+	assert.Nil(t, err)
+
+	initialPosition := lastEvent[0].MessagePosition
+	saveTestEvents(streamId, 10, 1)
+
+	events, err := es.ReadAllEventsBackward(initialPosition+1, 5)
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(events))
+
+	for i := 0; i < 5; i++ {
+		assert.Equal(t, initialPosition+1-int64(i), events[i].MessagePosition)
+	}
+}
+
+func saveTestEvents(stream string, count int, start int) {
+	for i := 0; i < count; i++  {
+		if _, err := es.Save(stream, start + i, "testevent", []byte(eventData)); err != nil {
+			panic(err)
+		}
 	}
 }
 

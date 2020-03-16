@@ -17,7 +17,6 @@ jobs:
         run: |
           make mod
           make build
-          make test
           make cover
 
       - name: Upload coverage

@@ -9,4 +9,6 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.5.1
+	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
+	golang.org/x/sys v0.0.0-20190412213103-97732733099d // indirect
 )

@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestHandleDynamoDbStream(t *testing.T) {
@@ -41,6 +42,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 	for _, queueName := range testConfig.Projections.QueueNames {
 		queueUrl, _ := sqsSvc.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: aws.String(queueName)})
 
+		time.Sleep(1 * time.Second)
 		msg, _ := sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl: queueUrl.QueueUrl,
 		})

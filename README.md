@@ -5,6 +5,7 @@ Serverless EventSourcing with go!
 [![GoDoc](https://godoc.org/github.com/roketworks/esgo?status.svg)](https://godoc.org/github.com/roketworks/esgo)
 [![codecov](https://codecov.io/gh/roketworks/esgo/branch/master/graph/badge.svg)](https://codecov.io/gh/roketworks/esgo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/roketworks/esgo)](https://goreportcard.com/report/github.com/roketworks/esgo)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Froketworks%2Fesgo.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Froketworks%2Fesgo?ref=badge_shield)
 
 Esgo is a helper library for Golang >=1.14 that provides the following to help wth implementing basic Event Sourcing in 
 AWS serverless architectures with DyanmoDb, SQS & Lambda.
@@ -26,4 +27,5 @@ make build
 make test
 ```
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Froketworks%2Fesgo.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Froketworks%2Fesgo?ref=badge_large)
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Froketworks%2Fesgo.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Froketworks%2Fesgo?ref=badge_large)

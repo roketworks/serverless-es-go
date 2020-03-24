@@ -12,7 +12,7 @@ type PostgresCheckpoint struct {
 
 // Save checkpoint position to postgres database.
 // Will also create/migrate schema if doesn't exist.
-func (checkpoint *PostgresCheckpoint) Save(position int, timestamp int64) error {
+func (checkpoint *PostgresCheckpoint) Save(position int64, timestamp int64) error {
 	db, err := sql.Open("postgres", checkpoint.ConnectionString)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ const schema = `
 	CREATE TABLE IF NOT EXISTS checkpoints
 	(
 		name        varchar(50) unique,
-		position    int,
+		position    bigint,
 		timestamp 	bigint
 	);
 `

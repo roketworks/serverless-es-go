@@ -7,16 +7,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/roketworks/esgo/internal"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 func TestHandleDynamoDbStream(t *testing.T) {
-	region := testConfig.Aws.Region
-	key := testConfig.Aws.AccessKey
-	secret := testConfig.Aws.AccessSecret
-	endpoint := testConfig.Aws.Sqs.Endpoint
+	region := internal.TestConfig.Aws.Region
+	key := internal.TestConfig.Aws.AccessKey
+	secret := internal.TestConfig.Aws.AccessSecret
+	endpoint := internal.TestConfig.Aws.Sqs.Endpoint
 
 	var awsConfig = aws.Config{
 		Endpoint:    aws.String(endpoint),
@@ -28,7 +29,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 	var sqsSvc = sqs.New(awsSession)
 	handler := &DynamoDbStreamHandler{
 		Sqs:        sqsSvc,
-		QueueNames: testConfig.Projections.QueueNames,
+		QueueNames: internal.TestConfig.Projections.QueueNames,
 	}
 
 	var testEvent events.DynamoDBEvent
@@ -39,7 +40,7 @@ func TestHandleDynamoDbStream(t *testing.T) {
 	err := handler.Handle(testEvent)
 	assert.Nil(t, err)
 
-	for _, queueName := range testConfig.Projections.QueueNames {
+	for _, queueName := range internal.TestConfig.Projections.QueueNames {
 		queueUrl, _ := sqsSvc.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: aws.String(queueName)})
 
 		time.Sleep(1 * time.Second)

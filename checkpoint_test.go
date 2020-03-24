@@ -1,6 +1,7 @@
 package esgo
 
 import (
+	"github.com/roketworks/esgo/internal"
 	"testing"
 
 	"database/sql"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestSaveNewCheckpoint(t *testing.T) {
-	checkpoint := &PostgresCheckpoint{ConnectionString: testConfig.Postgres.ConnectionString, ProjectionName: "test-projection"}
+	checkpoint := &PostgresCheckpoint{ConnectionString: internal.TestConfig.Postgres.ConnectionString, ProjectionName: "test-projection"}
 	timestamp := getTimestamp()
 	err := checkpoint.Save(1, timestamp)
 	assert.Nil(t, err)
@@ -18,7 +19,7 @@ func TestSaveNewCheckpoint(t *testing.T) {
 }
 
 func verifyCheckpoint(t *testing.T, name string, position int, timestamp int64) {
-	db, err := sql.Open("postgres", testConfig.Postgres.ConnectionString)
+	db, err := sql.Open("postgres", internal.TestConfig.Postgres.ConnectionString)
 	assert.Nil(t, err)
 
 	var projectionName string

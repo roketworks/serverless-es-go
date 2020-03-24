@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
+	"github.com/roketworks/esgo/internal"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -181,11 +182,11 @@ func saveTestEvents(stream string, count int, start int) {
 }
 
 func getEventStore() *DynamoDbEventStore {
-	region := testConfig.Aws.Region
-	key := testConfig.Aws.AccessKey
-	secret := testConfig.Aws.AccessSecret
-	endpoint := testConfig.Aws.DynamoDb.Endpoint
-	esTableName := testConfig.Aws.DynamoDb.TableName
+	region := internal.TestConfig.Aws.Region
+	key := internal.TestConfig.Aws.AccessKey
+	secret := internal.TestConfig.Aws.AccessSecret
+	endpoint := internal.TestConfig.Aws.DynamoDb.Endpoint
+	esTableName := internal.TestConfig.Aws.DynamoDb.TableName
 
 	var awsConfig = aws.Config{
 		Endpoint:    aws.String(endpoint),

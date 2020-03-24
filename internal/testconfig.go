@@ -1,4 +1,4 @@
-package esgo
+package internal
 
 import (
 	"fmt"
@@ -30,20 +30,21 @@ type Config struct {
 	}
 }
 
-var testConfig Config
+var TestConfig Config
 
 func init() {
 	viper.SetEnvPrefix("es_test")
 	viper.AutomaticEnv()
 	viper.EnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.SetConfigName("config_test")
+	viper.SetConfigName("testconfig")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("internal")
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	viper.Unmarshal(&testConfig)
+	viper.Unmarshal(&TestConfig)
 }

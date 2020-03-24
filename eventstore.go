@@ -31,6 +31,14 @@ type Event struct {
 	Data            []byte `dynamodbav:"eventData"`
 }
 
+// NewEventStore return an eventstore
+func NewEventStore(dynamodb dynamodbiface.DynamoDBAPI, table string) *DynamoDbEventStore {
+	return &DynamoDbEventStore{
+		Db:         dynamodb,
+		EventTable: table,
+	}
+}
+
 // ReadStreamEventsForward reads from the specified stream id starting at specified index and reads forward by the count
 // Query is inclusive of start position
 func (es *DynamoDbEventStore) ReadStreamEventsForward(streamId string, start int64, count int64) ([]Event, error) {

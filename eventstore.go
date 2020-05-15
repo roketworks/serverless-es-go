@@ -289,14 +289,12 @@ func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Eve
 			res = append(res, r)
 		}
 
-		results, lastKey, err = queryFunc(lastKey)
-
-		if err != nil {
-			return nil, err
-		}
-
 		if lastKey == nil || int64(len(results)) >= *queryInput.Limit {
 			break
+		}
+
+		if results, lastKey, err = queryFunc(lastKey); err != nil {
+			return nil, err
 		}
 	}
 

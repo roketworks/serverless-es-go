@@ -8,6 +8,6 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/lib/pq v1.6.0
 	github.com/spf13/viper v1.7.0
-	github.com/stretchr/testify v1.6.0
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
 )

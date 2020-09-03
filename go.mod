@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/aws/aws-lambda-go v1.19.1
-	github.com/aws/aws-sdk-go v1.34.11
+	github.com/aws/aws-sdk-go v1.34.16
 	github.com/google/uuid v1.1.2
 	github.com/lib/pq v1.8.0
 	github.com/spf13/viper v1.7.1

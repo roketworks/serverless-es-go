@@ -1,4 +1,4 @@
-package esgo
+package pkg
 
 import (
 	"errors"

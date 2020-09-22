@@ -1,4 +1,4 @@
-package esgo
+package pkg
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
-	"github.com/roketworks/esgo/internal"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -15,7 +14,14 @@ import (
 var es *DynamoDbEventStore
 
 func init() {
-	es = getEventStore()
+	config := aws.NewConfig()
+	config.Endpoint = aws.String("http://localhost:4566")
+	config.Region = aws.String("eu-west-1")
+	config.WithCredentials(credentials.NewStaticCredentials("test" , "test", "test"))
+
+	var awsSession = session.Must(session.NewSession(config))
+	var dynamoSvc = dynamodb.New(awsSession)
+	es = NewEventStore(dynamoSvc, "eventstore")
 }
 
 func TestSaveShouldSaveToNewStream(t *testing.T) {
@@ -179,24 +185,6 @@ func saveTestEvents(stream string, count int, start int) {
 			panic(err)
 		}
 	}
-}
-
-func getEventStore() *DynamoDbEventStore {
-	region := internal.TestConfig.Aws.Region
-	key := internal.TestConfig.Aws.AccessKey
-	secret := internal.TestConfig.Aws.AccessSecret
-	endpoint := internal.TestConfig.Aws.DynamoDb.Endpoint
-	esTableName := internal.TestConfig.Aws.DynamoDb.TableName
-
-	var awsConfig = aws.Config{
-		Endpoint:    aws.String(endpoint),
-		Region:      aws.String(region),
-		Credentials: credentials.NewStaticCredentials("default", key, secret),
-	}
-
-	var awsSession = session.Must(session.NewSession(&awsConfig))
-	var dynamoSvc = dynamodb.New(awsSession)
-	return &DynamoDbEventStore{Db: dynamoSvc, EventTable: esTableName}
 }
 
 const eventData string = `

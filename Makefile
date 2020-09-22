@@ -16,7 +16,7 @@ test:
 	go test -v ./...
 
 cover:
-	go test -race -coverprofile=coverage.txt -covermode=atomic .
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 
 .PHONY: setup
 setup:

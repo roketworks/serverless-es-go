@@ -1,4 +1,4 @@
-package pkg
+package esgo
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func init() {
 	config := aws.NewConfig()
 	config.Endpoint = aws.String("http://localhost:4566")
 	config.Region = aws.String("eu-west-1")
-	config.WithCredentials(credentials.NewStaticCredentials("test" , "test", "test"))
+	config.WithCredentials(credentials.NewStaticCredentials("test", "test", "test"))
 
 	var awsSession = session.Must(session.NewSession(config))
 	var dynamoSvc = dynamodb.New(awsSession)
@@ -121,9 +121,9 @@ func TestDynamoDbEventStore_ReadAllEventsForward_FromStart_ToEnd(t *testing.T) {
 
 	events, err := es.ReadAllEventsForward(PositionStart, PositionEnd)
 	assert.Nil(t, err)
-	assert.Equal(t, initialPosition + 10, int64(len(events)))
+	assert.Equal(t, initialPosition+10, int64(len(events)))
 
-	for i := 0; i < int(initialPosition) + 10; i++ {
+	for i := 0; i < int(initialPosition)+10; i++ {
 		assert.Equal(t, int64(i)+1, events[i].MessagePosition)
 	}
 }
@@ -138,7 +138,7 @@ func TestDynamoDbEventStore_ReadAllEventsForward_FromPosition(t *testing.T) {
 
 	events, err := es.ReadAllEventsForward(initialPosition+1, 5)
 	assert.Nil(t, err)
-	assert.Equal(t,  5, len(events))
+	assert.Equal(t, 5, len(events))
 
 	for i := 0; i < 5; i++ {
 		assert.Equal(t, initialPosition+1+int64(i), events[i].MessagePosition)
@@ -180,8 +180,8 @@ func TestDynamoDbEventStore_ReadAllEventsBackward_FromPosition(t *testing.T) {
 }
 
 func saveTestEvents(stream string, count int, start int) {
-	for i := 0; i < count; i++  {
-		if _, err := es.Save(stream, start + i, "testevent", []byte(eventData)); err != nil {
+	for i := 0; i < count; i++ {
+		if _, err := es.Save(stream, start+i, "testevent", []byte(eventData)); err != nil {
 			panic(err)
 		}
 	}

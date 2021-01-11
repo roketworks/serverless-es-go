@@ -220,7 +220,7 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 
 	conditionExpression := "attribute_not_exists(version)"
 	if !es.allowDuplicateCommitPosition {
-		conditionExpression := conditionExpression + " AND attribute_not_exists(#position)"
+		conditionExpression = conditionExpression + " AND attribute_not_exists(#position)"
 	}
 
 	input := &dynamodb.PutItemInput{

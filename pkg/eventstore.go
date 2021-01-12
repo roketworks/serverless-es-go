@@ -219,8 +219,10 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 	position := lastPosition + 1
 
 	conditionExpression := "attribute_not_exists(version)"
+	expressionAttributeNames := map[string]*string{}
 	if !es.allowDuplicateCommitPosition {
 		conditionExpression = conditionExpression + " AND attribute_not_exists(#position)"
+		expressionAttributeNames["#position"] = aws.String("position")
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -247,12 +249,10 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 				B: event,
 			},
 		},
-		ExpressionAttributeNames: map[string]*string{
-			"#position": aws.String("position"),
-		},
-		ConditionExpression: aws.String(conditionExpression),
-		ReturnValues:        aws.String("NONE"),
-		TableName:           aws.String(es.EventTable),
+		ExpressionAttributeNames: expressionAttributeNames,
+		ConditionExpression:      aws.String(conditionExpression),
+		ReturnValues:             aws.String("NONE"),
+		TableName:                aws.String(es.EventTable),
 	}
 
 	_, err = es.Db.PutItem(input)

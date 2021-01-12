@@ -27,7 +27,7 @@ func init() {
 func TestSaveShouldSaveToNewStream(t *testing.T) {
 	streamId := fmt.Sprintf("stream-%v", uuid.New().String())
 
-	_, err := es.Save(streamId, 1, "event-type", []byte(eventData))
+	err := es.Save(streamId, 1, "event-type", []byte(eventData))
 	assert.Nil(t, err)
 }
 
@@ -181,7 +181,7 @@ func TestDynamoDbEventStore_ReadAllEventsBackward_FromPosition(t *testing.T) {
 
 func saveTestEvents(stream string, count int, start int) {
 	for i := 0; i < count; i++  {
-		if _, err := es.Save(stream, start + i, "testevent", []byte(eventData)); err != nil {
+		if err := es.Save(stream, start + i, "testevent", []byte(eventData)); err != nil {
 			panic(err)
 		}
 	}

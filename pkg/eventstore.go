@@ -15,6 +15,8 @@ import (
 type DynamoDbEventStore struct {
 	Db         dynamodbiface.DynamoDBAPI
 	EventTable string
+
+	allowDuplicateCommitPosition bool
 }
 
 const (
@@ -31,12 +33,16 @@ type Event struct {
 	Data            []byte `dynamodbav:"eventData"`
 }
 
-// NewEventStore return an eventstore
+// NewEventStore return a DynamoDbEventStore
 func NewEventStore(dynamodb dynamodbiface.DynamoDBAPI, table string) *DynamoDbEventStore {
 	return &DynamoDbEventStore{
 		Db:         dynamodb,
 		EventTable: table,
 	}
+}
+
+func (es *DynamoDbEventStore) AllowDuplicateCommitPosition() {
+	es.allowDuplicateCommitPosition = true
 }
 
 // ReadStreamEventsForward reads from the specified stream id starting at specified index and reads forward by the count
@@ -196,11 +202,11 @@ func (es *DynamoDbEventStore) ReadAllEventsBackward(position int64, count int64)
 }
 
 // Save a new event to a specified stream. Returns the global position of the message.
-func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventType string, event []byte) (int64, error) {
+func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventType string, event []byte) error {
 	commitTime := strconv.FormatInt(getTimestamp(), 10)
 	lastEvent, err := es.ReadAllEventsBackward(PositionEnd, 1)
 	if err != nil {
-		return -1, err
+		return err
 	}
 
 	var lastPosition int64
@@ -211,6 +217,11 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 	}
 
 	position := lastPosition + 1
+
+	conditionExpression := "attribute_not_exists(version)"
+	if !es.allowDuplicateCommitPosition {
+		conditionExpression = conditionExpression + " AND attribute_not_exists(#position)"
+	}
 
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
@@ -239,25 +250,25 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 		ExpressionAttributeNames: map[string]*string{
 			"#position": aws.String("position"),
 		},
-		ConditionExpression: aws.String("attribute_not_exists(version) AND attribute_not_exists(#position)"),
+		ConditionExpression: aws.String(conditionExpression),
 		ReturnValues:        aws.String("NONE"),
 		TableName:           aws.String(es.EventTable),
 	}
 
 	_, err = es.Db.PutItem(input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		if awsErr, ok := err.(awserr.Error); ok {
+			switch awsErr.Code() {
 			case dynamodb.ErrCodeConditionalCheckFailedException:
-				return -1, errors.New("A commit already exists with the specified version")
+				return errors.New("A commit already exists with the specified version")
 			default:
-				return -1, aerr
+				return awsErr
 			}
 		}
-		return -1, err
+		return err
 	}
 
-	return position, nil
+	return nil
 }
 
 func queryEvents(es *DynamoDbEventStore, queryInput *dynamodb.QueryInput) ([]Event, error) {

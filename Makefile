@@ -7,7 +7,6 @@ AWS_ENDPOINT ?= http://localhost:4566
 .PHONY: mod
 mod:
 	GO111MODULE=on go mod tidy
-	GO111MODULE=on go mod vendor
 
 build:
 	CGO_ENABLED=0 GOOS=linux go build -v ./...

@@ -249,10 +249,13 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 				B: event,
 			},
 		},
-		ExpressionAttributeNames: expressionAttributeNames,
 		ConditionExpression:      aws.String(conditionExpression),
 		ReturnValues:             aws.String("NONE"),
 		TableName:                aws.String(es.EventTable),
+	}
+
+	if !es.allowDuplicateCommitPosition {
+		input.SetExpressionAttributeNames(expressionAttributeNames)
 	}
 
 	_, err = es.Db.PutItem(input)

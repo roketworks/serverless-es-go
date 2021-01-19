@@ -17,6 +17,7 @@ type DynamoDbEventStore struct {
 	EventTable string
 
 	allowDuplicateCommitPosition bool
+	disableConsistentReads       bool
 }
 
 const (
@@ -36,13 +37,19 @@ type Event struct {
 // NewEventStore return a DynamoDbEventStore
 func NewEventStore(dynamodb dynamodbiface.DynamoDBAPI, table string) *DynamoDbEventStore {
 	return &DynamoDbEventStore{
-		Db:         dynamodb,
-		EventTable: table,
+		Db:                           dynamodb,
+		EventTable:                   table,
+		allowDuplicateCommitPosition: false,
+		disableConsistentReads:       false,
 	}
 }
 
 func (es *DynamoDbEventStore) AllowDuplicateCommitPosition() {
 	es.allowDuplicateCommitPosition = true
+}
+
+func (es *DynamoDbEventStore) DisableConsistentReads() {
+	es.disableConsistentReads = true
 }
 
 // ReadStreamEventsForward reads from the specified stream id starting at specified index and reads forward by the count
@@ -64,7 +71,7 @@ func (es *DynamoDbEventStore) ReadStreamEventsForward(streamId string, start int
 
 	input := &dynamodb.QueryInput{
 		TableName:                 aws.String(es.EventTable),
-		ConsistentRead:            aws.Bool(true),
+		ConsistentRead:            aws.Bool(es.disableConsistentReads),
 		KeyConditionExpression:    aws.String(keyCondition),
 		ExpressionAttributeValues: expressionValues,
 		ScanIndexForward:          aws.Bool(true),
@@ -249,9 +256,9 @@ func (es *DynamoDbEventStore) Save(streamId string, expectedVersion int, eventTy
 				B: event,
 			},
 		},
-		ConditionExpression:      aws.String(conditionExpression),
-		ReturnValues:             aws.String("NONE"),
-		TableName:                aws.String(es.EventTable),
+		ConditionExpression: aws.String(conditionExpression),
+		ReturnValues:        aws.String("NONE"),
+		TableName:           aws.String(es.EventTable),
 	}
 
 	if !es.allowDuplicateCommitPosition {
